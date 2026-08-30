@@ -1,0 +1,66 @@
+<div style="max-width: 1080px; margin: 32px auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h1 style="margin: 0;">Products</h1>
+    <a routerLink="/products/new" class="btn-primary" style="text-decoration: none;">+ Add product</a>
+  </div>
+
+  <input
+    type="text"
+    placeholder="Search by name or SKU…"
+    [(ngModel)]="keyword"
+    (ngModelChange)="onKeywordChange()"
+    style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius); margin-bottom: 16px;"
+  />
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
+          <th style="padding: 12px;">Name</th>
+          <th style="padding: 12px;">SKU</th>
+          <th style="padding: 12px;">Unit</th>
+          <th style="padding: 12px; text-align: right;">Selling price</th>
+          <th style="padding: 12px; text-align: right;">Stock</th>
+          <th style="padding: 12px;">Status</th>
+          <th style="padding: 12px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let product of result()?.content" style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 12px;">
+            <a [routerLink]="['/products', product.id]">{{ product.productName }}</a>
+          </td>
+          <td style="padding: 12px;">{{ product.sku || '—' }}</td>
+          <td style="padding: 12px;">{{ product.unit }}</td>
+          <td style="padding: 12px; text-align: right;">₹{{ product.sellingPrice | number: '1.2-2' }}</td>
+          <td style="padding: 12px; text-align: right;" [style.color]="product.lowStock ? 'var(--color-danger)' : ''">
+            {{ product.stockQuantity }}
+            <span *ngIf="product.lowStock" title="At or below minimum stock level"> ⚠</span>
+          </td>
+          <td style="padding: 12px;">{{ product.status }}</td>
+          <td style="padding: 12px; text-align: right;">
+            <button *ngIf="product.status === 'ACTIVE'" (click)="deactivate(product)" style="cursor: pointer;">
+              Deactivate
+            </button>
+            <button *ngIf="product.status === 'INACTIVE'" (click)="reactivate(product)" style="cursor: pointer;">
+              Reactivate
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!loading() && result()?.content?.length === 0">
+          <td colspan="7" style="padding: 24px; text-align: center; color: var(--color-text-muted);">
+            No products found.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+    <span style="color: var(--color-text-muted);">{{ result()?.totalElements || 0 }} total</span>
+    <div style="display: flex; gap: 8px;">
+      <button (click)="prevPage()" [disabled]="result()?.first">Previous</button>
+      <button (click)="nextPage()" [disabled]="result()?.last">Next</button>
+    </div>
+  </div>
+</div>
