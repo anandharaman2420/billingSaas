@@ -1,0 +1,31 @@
+<div style="max-width: 400px; margin: 80px auto;" class="card">
+  <h1 style="margin-top: 0;">Sign in</h1>
+
+  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-field">
+      <label for="email">Email</label>
+      <input id="email" type="email" formControlName="email" autocomplete="email" />
+      <span class="form-error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+        A valid email is required
+      </span>
+    </div>
+
+    <div class="form-field">
+      <label for="password">Password</label>
+      <input id="password" type="password" formControlName="password" autocomplete="current-password" />
+      <span class="form-error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
+        Password is required
+      </span>
+    </div>
+
+    <button type="submit" class="btn-primary" [disabled]="loading()" style="width: 100%;">
+      {{ loading() ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+
+  <p style="margin-top: 16px; text-align: center;">
+    New business? <a routerLink="/register">Register here</a>
+  </p>
+</div>

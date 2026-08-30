@@ -1,0 +1,18 @@
+<div style="max-width: 720px; margin: 40px auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <h1 style="margin: 0;">Welcome, {{ authService.currentUser()?.fullName }}</h1>
+    <button class="btn-primary" (click)="logout()">Log out</button>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top: 0;">Phase 1 status</h2>
+    <p>
+      This confirms authentication and multi-tenant isolation are working end to end. Real
+      dashboard metrics (today's sales, pending payments, customer/product counts, charts) will
+      replace this once the Customers, Products, and Invoices modules are built in later phases.
+    </p>
+
+    <h3>Authenticated session (/api/me)</h3>
+    <pre style="background: var(--color-bg); padding: 12px; border-radius: var(--radius);">{{ me() | json }}</pre>
+  </div>
+</div>

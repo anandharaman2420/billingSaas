@@ -1,0 +1,56 @@
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Java / Maven
+# =========================
+target/
+*.class
+*.jar
+*.war
+
+# =========================
+# IDE
+# =========================
+.idea/
+*.iml
+.vscode/
+.nb-gradle/
+nbproject/private/
+nbbuild/
+dist/
+build/
+
+# NetBeans
+.nb-gradle/
+.nbactions.xml
+
+# =========================
+# Angular / Node
+# =========================
+node_modules/
+.angular/
+frontend/dist/
+frontend/.angular/
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Temporary
+# =========================
+*.tmp
+*.temp

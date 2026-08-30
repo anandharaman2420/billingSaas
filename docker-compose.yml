@@ -1,0 +1,21 @@
+version: '3.9'
+
+# Optional - only needed if you want a disposable local Postgres for dev
+# instead of pointing at an existing instance. Not used in production;
+# see backend/.env.example for connecting to a real database.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: billing-saas-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: billing_saas
+      POSTGRES_USER: billing_app
+      POSTGRES_PASSWORD: change_me
+    ports:
+      - '5432:5432'
+    volumes:
+      - billing_saas_pgdata:/var/lib/postgresql/data
+
+volumes:
+  billing_saas_pgdata:
