@@ -1,0 +1,32 @@
+<div style="max-width: 480px; margin: 32px auto;" class="card">
+  <h1 style="margin-top: 0;">{{ serviceId ? 'Edit service' : 'Add service' }}</h1>
+
+  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-field">
+      <label>Service name *</label>
+      <input formControlName="serviceName" />
+    </div>
+
+    <div class="form-field">
+      <label>Description</label>
+      <input formControlName="description" />
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      <div class="form-field" style="flex: 1;">
+        <label>Price (₹) *</label>
+        <input formControlName="price" type="number" min="0" step="0.01" />
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <label>Tax rate (%) *</label>
+        <input formControlName="taxRatePercent" type="number" min="0" max="100" step="0.01" />
+      </div>
+    </div>
+
+    <button type="submit" class="btn-primary" [disabled]="loading()">
+      {{ loading() ? 'Saving…' : 'Save service' }}
+    </button>
+  </form>
+</div>

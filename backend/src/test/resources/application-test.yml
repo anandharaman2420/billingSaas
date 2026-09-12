@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:billing_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+
+  flyway:
+    enabled: false   # migrations use Postgres-only features (pgcrypto, jsonb); Hibernate owns the test schema instead
+
+app:
+  jwt:
+    secret: test-only-secret-key-not-for-production-use-minimum-256-bits-long-000000
+    access-token-expiration-ms: 900000
+    refresh-token-expiration-ms: 604800000
+    issuer: billing-saas-test
+  cors:
+    allowed-origins: http://localhost:4200

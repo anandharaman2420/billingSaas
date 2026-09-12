@@ -1,0 +1,17 @@
+spring:
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    com.saasbilling: INFO
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}   # must be explicitly set in production, no localhost fallback

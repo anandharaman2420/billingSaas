@@ -1,0 +1,54 @@
+<div style="display: flex; min-height: 100vh;">
+  <aside style="width: 220px; background: var(--color-surface); border-right: 1px solid var(--color-border); padding: 20px 0; flex-shrink: 0;">
+    <div style="padding: 0 20px 20px; font-weight: 700; font-size: 1.1rem;">
+      {{ authService.currentUser()?.businessName }}
+    </div>
+    <nav style="display: flex; flex-direction: column; gap: 2px;">
+      <a routerLink="/dashboard" routerLinkActive="active-nav" class="nav-link">Dashboard</a>
+      <a routerLink="/customers" routerLinkActive="active-nav" class="nav-link">Customers</a>
+      <a routerLink="/products" routerLinkActive="active-nav" class="nav-link">Products</a>
+      <a routerLink="/services" routerLinkActive="active-nav" class="nav-link">Services</a>
+      <!-- Invoices, Payments, Expenses, Reports, Settings routes plug in here in later phases -->
+    </nav>
+  </aside>
+
+  <div style="flex: 1; display: flex; flex-direction: column;">
+    <header style="display: flex; justify-content: flex-end; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
+      <span style="margin-right: 16px; color: var(--color-text-muted);">
+        {{ authService.currentUser()?.fullName }} · {{ authService.currentUser()?.role }}
+      </span>
+      <button (click)="logout()">Log out</button>
+    </header>
+
+    <main style="flex: 1; overflow-y: auto;">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
+<style>
+  .nav-link {
+    padding: 10px 20px;
+    color: var(--color-text);
+    text-decoration: none;
+  }
+  .nav-link:hover {
+    background: var(--color-bg);
+  }
+  .nav-link.active-nav {
+    background: var(--color-bg);
+    font-weight: 600;
+    border-left: 3px solid var(--color-primary);
+  }
+
+  @media (max-width: 720px) {
+    aside {
+      width: 64px !important;
+    }
+    aside div:first-child,
+    .nav-link {
+      text-align: center;
+      font-size: 0.75rem;
+    }
+  }
+</style>

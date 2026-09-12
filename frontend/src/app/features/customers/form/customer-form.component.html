@@ -1,0 +1,60 @@
+<div style="max-width: 560px; margin: 32px auto;" class="card">
+  <h1 style="margin-top: 0;">{{ customerId ? 'Edit customer' : 'Add customer' }}</h1>
+
+  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-field">
+      <label>Customer name *</label>
+      <input formControlName="customerName" />
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      <div class="form-field" style="flex: 1;">
+        <label>Phone</label>
+        <input formControlName="phone" />
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <label>Email</label>
+        <input formControlName="email" type="email" />
+        <span class="form-error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
+          Enter a valid email
+        </span>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Address</label>
+      <input formControlName="addressLine" />
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      <div class="form-field" style="flex: 1;">
+        <label>City</label>
+        <input formControlName="city" />
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <label>State</label>
+        <input formControlName="state" />
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <label>Pincode</label>
+        <input formControlName="pincode" />
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>GSTIN (optional)</label>
+      <input formControlName="gstin" />
+    </div>
+
+    <div class="form-field">
+      <label>Notes</label>
+      <input formControlName="notes" />
+    </div>
+
+    <button type="submit" class="btn-primary" [disabled]="loading()">
+      {{ loading() ? 'Saving…' : 'Save customer' }}
+    </button>
+  </form>
+</div>

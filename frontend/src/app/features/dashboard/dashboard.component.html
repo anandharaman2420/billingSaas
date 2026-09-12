@@ -1,0 +1,30 @@
+<div style="max-width: 960px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="margin-top: 0;">Welcome, {{ authService.currentUser()?.fullName }}</h1>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <a routerLink="/customers" class="card" style="text-decoration: none; color: inherit;">
+      <h3 style="margin: 0 0 4px;">Customers</h3>
+      <p style="margin: 0; color: var(--color-text-muted);">Manage your customer list</p>
+    </a>
+    <a routerLink="/products" class="card" style="text-decoration: none; color: inherit;">
+      <h3 style="margin: 0 0 4px;">Products</h3>
+      <p style="margin: 0; color: var(--color-text-muted);">Manage inventory and pricing</p>
+    </a>
+    <a routerLink="/services" class="card" style="text-decoration: none; color: inherit;">
+      <h3 style="margin: 0 0 4px;">Services</h3>
+      <p style="margin: 0; color: var(--color-text-muted);">Manage billable services</p>
+    </a>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top: 0;">Phase 2 status</h2>
+    <p>
+      Customers, Products, and Services are now fully wired up with tenant-scoped CRUD, search,
+      pagination, and role-based permissions. Real dashboard metrics (today's sales, pending payments,
+      charts) land once the Invoices and Payments modules are built.
+    </p>
+
+    <h3>Authenticated session (/api/me)</h3>
+    <pre style="background: var(--color-bg); padding: 12px; border-radius: var(--radius);">{{ me() | json }}</pre>
+  </div>
+</div>
