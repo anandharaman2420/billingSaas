@@ -1,0 +1,85 @@
+<div style="max-width: 780px; margin: 32px auto;" class="card">
+  <h1 style="margin-top: 0;">{{ invoiceId ? 'Edit invoice' : 'New invoice' }}</h1>
+
+  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div style="display: flex; gap: 12px;">
+      <div class="form-field" style="flex: 2;">
+        <label>Customer *</label>
+        <select formControlName="customerId">
+          <option value="" disabled>Select a customer…</option>
+          <option *ngFor="let c of customers()" [value]="c.id">{{ c.customerName }}</option>
+        </select>
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <label>Invoice date *</label>
+        <input type="date" formControlName="invoiceDate" />
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <label>Due date</label>
+        <input type="date" formControlName="dueDate" />
+      </div>
+    </div>
+
+    <h3>Items</h3>
+    <div formArrayName="items">
+      <div
+        *ngFor="let itemGroup of items.controls; let i = index"
+        [formGroupName]="i"
+        style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; padding: 12px; background: var(--color-bg); border-radius: var(--radius);"
+      >
+        <div class="form-field" style="flex: 3; margin-bottom: 0;">
+          <select formControlName="catalogKey">
+            <option value="" disabled>Select a product or service…</option>
+            <option *ngFor="let entry of catalog()" [value]="entry.key">
+              {{ entry.type === 'PRODUCT' ? '📦' : '🔧' }} {{ entry.name }} — ₹{{ entry.price | number: '1.2-2' }}
+            </option>
+          </select>
+        </div>
+        <div class="form-field" style="flex: 1; margin-bottom: 0;">
+          <input type="number" formControlName="quantity" min="0.01" step="0.01" placeholder="Qty" />
+        </div>
+        <div class="form-field" style="flex: 1; margin-bottom: 0;">
+          <input type="number" formControlName="discountAmount" min="0" step="0.01" placeholder="Discount ₹" />
+        </div>
+        <div style="flex: 1; padding-top: 10px; text-align: right; font-weight: 600;">
+          ₹{{ lineEstimate(i) | number: '1.2-2' }}
+        </div>
+        <button type="button" (click)="removeItem(i)" style="margin-top: 2px;">✕</button>
+      </div>
+    </div>
+    <button type="button" (click)="addItem()" style="margin-bottom: 16px;">+ Add line</button>
+
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+      <div style="text-align: right;">
+        <div style="color: var(--color-text-muted); font-size: 0.9rem;">Estimated subtotal (before overall discount)</div>
+        <div style="font-size: 1.2rem; font-weight: 700;">₹{{ subtotalEstimate | number: '1.2-2' }}</div>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Additional discount (₹, applied to grand total)</label>
+      <input type="number" formControlName="additionalDiscountAmount" min="0" step="0.01" />
+    </div>
+
+    <div class="form-field">
+      <label>Notes</label>
+      <input formControlName="notes" />
+    </div>
+
+    <div class="form-field">
+      <label>Terms &amp; conditions</label>
+      <input formControlName="terms" />
+    </div>
+
+    <p style="color: var(--color-text-muted); font-size: 0.85rem;">
+      Final totals (including tax split and any rounding) are calculated by the server when you save -
+      this preview is only an estimate.
+    </p>
+
+    <button type="submit" class="btn-primary" [disabled]="loading()">
+      {{ loading() ? 'Saving…' : 'Save invoice' }}
+    </button>
+  </form>
+</div>

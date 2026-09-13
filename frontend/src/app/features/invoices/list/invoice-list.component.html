@@ -1,0 +1,60 @@
+<div style="max-width: 1080px; margin: 32px auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h1 style="margin: 0;">Invoices</h1>
+    <a routerLink="/invoices/new" class="btn-primary" style="text-decoration: none;">+ New invoice</a>
+  </div>
+
+  <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+    <input
+      type="text"
+      placeholder="Search by invoice number…"
+      [(ngModel)]="keyword"
+      (ngModelChange)="onKeywordChange()"
+      style="flex: 1; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius);"
+    />
+    <select [(ngModel)]="status" (ngModelChange)="onStatusChange()" style="padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius);">
+      <option value="">All statuses</option>
+      <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+    </select>
+  </div>
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
+          <th style="padding: 12px;">Invoice #</th>
+          <th style="padding: 12px;">Date</th>
+          <th style="padding: 12px;">Due date</th>
+          <th style="padding: 12px; text-align: right;">Total</th>
+          <th style="padding: 12px; text-align: right;">Balance due</th>
+          <th style="padding: 12px;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let invoice of result()?.content" style="border-bottom: 1px solid var(--color-border); cursor: pointer;" [routerLink]="['/invoices', invoice.id]">
+          <td style="padding: 12px;">{{ invoice.invoiceNumber || 'DRAFT' }}</td>
+          <td style="padding: 12px;">{{ invoice.invoiceDate | date: 'dd MMM yyyy' }}</td>
+          <td style="padding: 12px;">{{ invoice.dueDate ? (invoice.dueDate | date: 'dd MMM yyyy') : '—' }}</td>
+          <td style="padding: 12px; text-align: right;">₹{{ invoice.grandTotal | number: '1.2-2' }}</td>
+          <td style="padding: 12px; text-align: right;">₹{{ invoice.balanceDue | number: '1.2-2' }}</td>
+          <td style="padding: 12px;">
+            <span [style.color]="statusColor(invoice.status)" style="font-weight: 600;">{{ invoice.status }}</span>
+          </td>
+        </tr>
+        <tr *ngIf="!loading() && result()?.content?.length === 0">
+          <td colspan="6" style="padding: 24px; text-align: center; color: var(--color-text-muted);">
+            No invoices found.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+    <span style="color: var(--color-text-muted);">{{ result()?.totalElements || 0 }} total</span>
+    <div style="display: flex; gap: 8px;">
+      <button (click)="prevPage()" [disabled]="result()?.first">Previous</button>
+      <button (click)="nextPage()" [disabled]="result()?.last">Next</button>
+    </div>
+  </div>
+</div>

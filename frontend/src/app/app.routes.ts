@@ -67,6 +67,31 @@ export const routes: Routes = [
           import('./features/products/form/product-form.component').then((m) => m.ProductFormComponent),
       },
 
+      // --- Invoices: all roles view/create/edit-while-draft (STAFF's
+      // core job is billing); issue and cancel are gated server-side
+      // via @PreAuthorize, and the roleGuard here just avoids showing
+      // buttons a STAFF user's click would get rejected. ---
+      {
+        path: 'invoices',
+        loadComponent: () =>
+          import('./features/invoices/list/invoice-list.component').then((m) => m.InvoiceListComponent),
+      },
+      {
+        path: 'invoices/new',
+        loadComponent: () =>
+          import('./features/invoices/form/invoice-form.component').then((m) => m.InvoiceFormComponent),
+      },
+      {
+        path: 'invoices/:id',
+        loadComponent: () =>
+          import('./features/invoices/detail/invoice-detail.component').then((m) => m.InvoiceDetailComponent),
+      },
+      {
+        path: 'invoices/:id/edit',
+        loadComponent: () =>
+          import('./features/invoices/form/invoice-form.component').then((m) => m.InvoiceFormComponent),
+      },
+
       // --- Services: same role policy as products. ---
       {
         path: 'services',

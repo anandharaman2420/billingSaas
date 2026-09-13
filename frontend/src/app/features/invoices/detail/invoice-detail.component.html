@@ -1,0 +1,110 @@
+<div style="max-width: 800px; margin: 32px auto;" *ngIf="invoice() as inv">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+    <div>
+      <h1 style="margin: 0 0 4px;">{{ inv.invoiceNumber || 'Draft invoice' }}</h1>
+      <span [style.color]="statusColor(inv.status)" style="font-weight: 700;">{{ inv.status }}</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button (click)="downloadPdf()">Download PDF</button>
+      <button *ngIf="inv.status === 'DRAFT'" (click)="edit()">Edit</button>
+      <button *ngIf="inv.status === 'DRAFT' && canManage()" class="btn-primary" [disabled]="actionInProgress()" (click)="issue()">
+        Issue invoice
+      </button>
+      <button *ngIf="inv.status !== 'CANCELLED' && canManage()" [disabled]="actionInProgress()" (click)="cancel()">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between;">
+      <div>
+        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Invoice date</div>
+        <div>{{ inv.invoiceDate | date: 'dd MMM yyyy' }}</div>
+      </div>
+      <div>
+        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Due date</div>
+        <div>{{ inv.dueDate ? (inv.dueDate | date: 'dd MMM yyyy') : '—' }}</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Balance due</div>
+        <div style="font-weight: 700; font-size: 1.1rem;">₹{{ inv.balanceDue | number: '1.2-2' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 16px;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
+          <th style="padding: 12px;">Item</th>
+          <th style="padding: 12px; text-align: right;">Qty</th>
+          <th style="padding: 12px; text-align: right;">Unit price</th>
+          <th style="padding: 12px; text-align: right;">Discount</th>
+          <th style="padding: 12px; text-align: right;">Tax</th>
+          <th style="padding: 12px; text-align: right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of inv.items" style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 12px;">{{ item.itemName }}</td>
+          <td style="padding: 12px; text-align: right;">{{ item.quantity }}</td>
+          <td style="padding: 12px; text-align: right;">₹{{ item.unitPrice | number: '1.2-2' }}</td>
+          <td style="padding: 12px; text-align: right;">₹{{ item.discountAmount | number: '1.2-2' }}</td>
+          <td style="padding: 12px; text-align: right;">{{ item.taxRatePercent }}%</td>
+          <td style="padding: 12px; text-align: right; font-weight: 600;">₹{{ item.lineTotal | number: '1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display: flex; justify-content: flex-end;">
+    <div class="card" style="min-width: 280px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>Subtotal</span><span>₹{{ inv.subtotal | number: '1.2-2' }}</span>
+      </div>
+      <div *ngIf="inv.itemDiscountTotal > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>Item discounts</span><span>-₹{{ inv.itemDiscountTotal | number: '1.2-2' }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>Taxable amount</span><span>₹{{ inv.taxableAmount | number: '1.2-2' }}</span>
+      </div>
+      <div *ngIf="inv.cgstAmount > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>CGST</span><span>₹{{ inv.cgstAmount | number: '1.2-2' }}</span>
+      </div>
+      <div *ngIf="inv.sgstAmount > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>SGST</span><span>₹{{ inv.sgstAmount | number: '1.2-2' }}</span>
+      </div>
+      <div *ngIf="inv.igstAmount > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>IGST</span><span>₹{{ inv.igstAmount | number: '1.2-2' }}</span>
+      </div>
+      <div *ngIf="inv.additionalDiscountAmount > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>Additional discount</span><span>-₹{{ inv.additionalDiscountAmount | number: '1.2-2' }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--color-border); padding-top: 8px; font-weight: 700; font-size: 1.1rem;">
+        <span>Grand total</span><span>₹{{ inv.grandTotal | number: '1.2-2' }}</span>
+      </div>
+      <div *ngIf="inv.amountPaid > 0" style="display: flex; justify-content: space-between; margin-top: 6px; color: var(--color-success);">
+        <span>Amount paid</span><span>₹{{ inv.amountPaid | number: '1.2-2' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="inv.notes || inv.terms" style="margin-top: 16px;">
+    <div *ngIf="inv.notes">
+      <strong>Notes</strong>
+      <p>{{ inv.notes }}</p>
+    </div>
+    <div *ngIf="inv.terms">
+      <strong>Terms &amp; Conditions</strong>
+      <p>{{ inv.terms }}</p>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="inv.status === 'CANCELLED'" style="margin-top: 16px; border-color: var(--color-danger);">
+    <strong style="color: var(--color-danger);">Cancelled</strong>
+    <p>{{ inv.cancellationReason }}</p>
+  </div>
+</div>
+
+<div *ngIf="loading()" style="text-align: center; padding: 48px; color: var(--color-text-muted);">Loading…</div>

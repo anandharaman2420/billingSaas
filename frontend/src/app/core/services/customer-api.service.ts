@@ -19,6 +19,15 @@ export class CustomerApiService {
     return this.http.get<PageResponse<Customer>>(this.baseUrl, { params });
   }
 
+  /** Used by the invoice customer picker - all active customers, no pagination UI needed for a dropdown. */
+  listActiveForBilling(keyword = ''): Observable<PageResponse<Customer>> {
+    let params = new HttpParams().set('page', 0).set('size', 200).set('status', 'ACTIVE');
+    if (keyword) {
+      params = params.set('keyword', keyword);
+    }
+    return this.http.get<PageResponse<Customer>>(this.baseUrl, { params });
+  }
+
   getById(id: string): Observable<Customer> {
     return this.http.get<Customer>(`${this.baseUrl}/${id}`);
   }

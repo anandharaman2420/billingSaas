@@ -19,6 +19,15 @@ export class ProductApiService {
     return this.http.get<PageResponse<Product>>(this.baseUrl, { params });
   }
 
+  /** Used by the invoice line-item picker - all active products, no pagination UI needed for a dropdown. */
+  listActiveForBilling(keyword = ''): Observable<PageResponse<Product>> {
+    let params = new HttpParams().set('page', 0).set('size', 200).set('status', 'ACTIVE');
+    if (keyword) {
+      params = params.set('keyword', keyword);
+    }
+    return this.http.get<PageResponse<Product>>(this.baseUrl, { params });
+  }
+
   getById(id: string): Observable<Product> {
     return this.http.get<Product>(`${this.baseUrl}/${id}`);
   }

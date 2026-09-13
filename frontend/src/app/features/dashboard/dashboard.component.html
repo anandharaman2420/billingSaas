@@ -14,14 +14,19 @@
       <h3 style="margin: 0 0 4px;">Services</h3>
       <p style="margin: 0; color: var(--color-text-muted);">Manage billable services</p>
     </a>
+    <a routerLink="/invoices" class="card" style="text-decoration: none; color: inherit;">
+      <h3 style="margin: 0 0 4px;">Invoices</h3>
+      <p style="margin: 0; color: var(--color-text-muted);">Create and manage invoices</p>
+    </a>
   </div>
 
   <div class="card">
-    <h2 style="margin-top: 0;">Phase 2 status</h2>
+    <h2 style="margin-top: 0;">Phase 3 status</h2>
     <p>
-      Customers, Products, and Services are now fully wired up with tenant-scoped CRUD, search,
-      pagination, and role-based permissions. Real dashboard metrics (today's sales, pending payments,
-      charts) land once the Invoices and Payments modules are built.
+      Invoices are now fully wired up: line items pull live pricing from Products/Services, all totals
+      (subtotal, tax, CGST/SGST/IGST split, grand total) are calculated server-side, invoice numbers are
+      assigned safely under concurrent requests when an invoice is issued, and a PDF is generated on demand.
+      Payments (recording full/partial payments against an invoice) land in the next phase.
     </p>
 
     <h3>Authenticated session (/api/me)</h3>

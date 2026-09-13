@@ -19,6 +19,15 @@ export class ServiceApiService {
     return this.http.get<PageResponse<BillableService>>(this.baseUrl, { params });
   }
 
+  /** Used by the invoice line-item picker - all active services, no pagination UI needed for a dropdown. */
+  listActiveForBilling(keyword = ''): Observable<PageResponse<BillableService>> {
+    let params = new HttpParams().set('page', 0).set('size', 200).set('status', 'ACTIVE');
+    if (keyword) {
+      params = params.set('keyword', keyword);
+    }
+    return this.http.get<PageResponse<BillableService>>(this.baseUrl, { params });
+  }
+
   getById(id: string): Observable<BillableService> {
     return this.http.get<BillableService>(`${this.baseUrl}/${id}`);
   }

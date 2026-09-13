@@ -158,6 +158,38 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
 - [x] Angular: `roleGuard(...)` gates Product/Service create-edit routes client-side for UX — the backend
       `@PreAuthorize` checks are the actual security boundary, this just avoids showing a form the user can't submit
 
+### Phase 3 — Invoices
+- [x] Server-side total calculation only — the client sends WHAT to bill (product/service id, quantity,
+      optional per-line discount); `InvoiceService` looks up unit price and tax rate from the tenant's own
+      Product/Service records and computes every total itself (spec section 11: never trust totals from
+      the frontend)
+- [x] Line items snapshot the item name/price/tax rate at billing time, so historical invoices stay accurate
+      even if a product is later renamed, repriced, or deactivated
+- [x] Configurable, concurrency-safe invoice numbering: `{PREFIX}-{YEAR}-{SEQ:00000}` format is parsed from
+      `business_settings.invoice_number_format`; the sequence counter is incremented under a pessimistic
+      row lock (`SELECT ... FOR UPDATE` via `BusinessSettingsRepository#findByBusinessIdForUpdate`) inside
+      the same transaction that issues the invoice, so two concurrent requests can never collide on a number
+- [x] The invoice number is assigned at **issue** time, not at creation — a `DRAFT` that's abandoned never
+      burns a sequence number (`invoice_number` is nullable with a partial unique index)
+- [x] All six statuses (`DRAFT`, `ISSUED`, `PARTIALLY_PAID`, `PAID`, `OVERDUE`, `CANCELLED`); editing is only
+      allowed while `DRAFT`; issued invoices can only be cancelled (never silently rewritten, spec section 14)
+- [x] Cancellation is blocked if any payment has already been recorded against the invoice, and is never a
+      hard delete — the cancelled invoice and its number stay in history (spec section 42)
+- [x] GST tax split: CGST+SGST when the business and customer share a state, IGST otherwise (or when either
+      party's state isn't on file). This is a simplification for MVP — flagged in the PDF service comments
+      as something an accountant should verify for businesses doing both intra- and inter-state sales
+- [x] Professional PDF invoice generation (OpenPDF) matching spec section 20's layout: business header with
+      GSTIN, invoice/customer details, item table, subtotal/discount/CGST/SGST/IGST/grand-total breakdown,
+      a payment-status banner (paid/partially paid/payment due/cancelled), and notes/terms pulled from the
+      invoice or falling back to `business_settings` defaults
+- [x] Role-based authorization: all roles (including STAFF) can create/view/edit-while-draft invoices —
+      billing customers is STAFF's core job; only OWNER/ADMIN/MANAGER can issue or cancel
+- [x] Angular: invoice list (search/status filter/pagination), a line-item builder (product/service picker
+      with a live client-side estimate — the server recalculates authoritatively on save), and a detail view
+      showing the server's authoritative totals with Issue/Cancel/PDF-download actions
+- [x] Tests: server-side calculation correctness (tax split, totals), concurrency-safe sequential numbering
+      across two invoices, and tenant isolation for invoices
+
 ## Known limitations (by design, for this phase)
 
 - No email sending yet — password reset tokens are logged server-side only (`AuthService.forgotPassword`);
@@ -170,14 +202,21 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
   production hardening pass (noted in `auth.service.ts`).
 - No Docker Compose for the app itself yet (only for optional local Postgres) — added when deployment
   documentation (spec section 40) is tackled.
+- Categories have a backend CRUD but no dedicated frontend screen yet — the `categoryId` field exists on
+  products/services but there's no UI picker for it
+- Invoice-level `additionalDiscountAmount` is applied **after** tax (a flat rebate off the grand total),
+  not proportionally distributed across line items before tax. This is a deliberate MVP simplification —
+  proportional pre-tax discount allocation across mixed-tax-rate line items adds real complexity for
+  limited benefit at this stage; documented in `InvoiceService` and the DB migration comments so a future
+  phase can revisit it if a customer needs GST-compliant discount treatment
+- No scheduled job yet to automatically flip `ISSUED`/`PARTIALLY_PAID` invoices to `OVERDUE` after their
+  due date passes — `InvoiceRepository#findOverdueCandidates` is ready for a future `@Scheduled` task to use
 - Backend was not compiled in this environment (no Maven/Maven-Central network access here) — run
   `mvn clean install` locally to verify before deploying.
 
 ## Next recommended phase
 
-**Phase 3: Invoices module** — invoice creation UI (line items from Products/Services, discount, tax), server-side
-total calculation (never trust totals from the frontend, per spec section 11), configurable invoice numbering
-(`business_settings.invoice_prefix` / `invoice_next_sequence`, safe under concurrent requests), invoice statuses
-(`DRAFT`, `ISSUED`, `PARTIALLY_PAID`, `PAID`, `OVERDUE`, `CANCELLED`), and the professional PDF invoice layout.
-Payments (full/partial, multiple methods) naturally follows once invoices exist, since payment status is
-computed against invoice totals.
+**Phase 4: Payments module** — recording full/partial payments against an invoice (cash, UPI, bank transfer,
+card, cheque), updating `invoices.amount_paid` and rolling the status forward through `PARTIALLY_PAID` →
+`PAID` automatically, payment history with filtering, and the dashboard metrics (today's/monthly sales,
+pending payments, top products) that have been waiting on real invoice/payment data since Phase 1.
