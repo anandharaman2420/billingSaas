@@ -190,6 +190,27 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
 - [x] Tests: server-side calculation correctness (tax split, totals), concurrency-safe sequential numbering
       across two invoices, and tenant isolation for invoices
 
+### Phase 4 — Payments and real dashboard metrics
+- [x] Record full/partial payments against an invoice (CASH, UPI, BANK_TRANSFER, CARD, CHEQUE, OTHER);
+      payment amount is validated against the invoice's balance due server-side, never trusted as-is
+- [x] `invoices.amount_paid` is always recomputed as the authoritative sum of that invoice's non-voided
+      payments (`PaymentRepository#sumActiveAmountByInvoiceId`) rather than incrementally adjusted, so it
+      can never drift out of sync
+- [x] Invoice status rolls forward automatically: `ISSUED` → `PARTIALLY_PAID` → `PAID` as payments come in
+- [x] Payments are never hard-deleted (spec section 42) — a mistaken entry is voided instead
+      (`voided`/`voided_at`/`voided_reason`), which reverts the invoice status/balance accordingly;
+      voiding is restricted to OWNER/ADMIN/MANAGER
+- [x] Cannot record a payment against a `DRAFT` (not yet issued), `CANCELLED`, or already-`PAID` invoice —
+      clear, specific error messages for each case
+- [x] Role policy: all roles (including STAFF) can record payments, per spec section 5
+- [x] Real dashboard metrics replacing the Phase 1 placeholder: today's/month's/total sales, pending
+      payments, paid amount, bills issued, active customers, active products — every figure is a live
+      query against the tenant's own data, never hardcoded (spec section 7)
+- [x] Angular: payment recording form and payment history (with void action) embedded directly in the
+      invoice detail page; dashboard now shows real metric cards instead of a raw JSON dump
+- [x] Tests: partial → full payment status transitions, payment-exceeds-balance rejection, and
+      void-reverts-status-and-balance
+
 ## Known limitations (by design, for this phase)
 
 - No email sending yet — password reset tokens are logged server-side only (`AuthService.forgotPassword`);
@@ -211,12 +232,18 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
   phase can revisit it if a customer needs GST-compliant discount treatment
 - No scheduled job yet to automatically flip `ISSUED`/`PARTIALLY_PAID` invoices to `OVERDUE` after their
   due date passes — `InvoiceRepository#findOverdueCandidates` is ready for a future `@Scheduled` task to use
+- No dedicated `/payments` list page yet — payment history is viewable per-invoice on the invoice detail
+  page; a global searchable/filterable payments list (`PaymentController#search` already supports it) is a
+  small addition for a future phase
+- The dashboard summary endpoint (`GET /api/dashboard`) is currently open to all roles, including STAFF —
+  worth revisiting with a `@PreAuthorize` restriction if a business doesn't want staff seeing aggregate
+  sales figures
 - Backend was not compiled in this environment (no Maven/Maven-Central network access here) — run
   `mvn clean install` locally to verify before deploying.
 
 ## Next recommended phase
 
-**Phase 4: Payments module** — recording full/partial payments against an invoice (cash, UPI, bank transfer,
-card, cheque), updating `invoices.amount_paid` and rolling the status forward through `PARTIALLY_PAID` →
-`PAID` automatically, payment history with filtering, and the dashboard metrics (today's/monthly sales,
-pending payments, top products) that have been waiting on real invoice/payment data since Phase 1.
+**Phase 5: Expenses + Reports** — expense tracking (spec section 17) with configurable categories (reusing
+the `categories` table's `EXPENSE` type already in the schema), and the reporting module (spec section 18):
+sales/invoice/payment/customer/product/expense reports with PDF/Excel/CSV export. A scheduled job to sweep
+overdue invoices (`InvoiceRepository#findOverdueCandidates` is ready) fits naturally alongside this phase.

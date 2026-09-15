@@ -53,4 +53,40 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
               and i.dueDate < :asOf
             """)
     java.util.List<Invoice> findOverdueCandidates(@Param("businessId") UUID businessId, @Param("asOf") LocalDate asOf);
+
+    // --- Dashboard aggregates (spec section 7) ---
+
+    @Query("""
+            select coalesce(sum(i.grandTotal), 0) from Invoice i
+            where i.businessId = :businessId
+              and i.status <> com.saasbilling.entity.InvoiceStatus.DRAFT
+              and i.status <> com.saasbilling.entity.InvoiceStatus.CANCELLED
+              and i.invoiceDate >= :fromDate and i.invoiceDate <= :toDate
+            """)
+    java.math.BigDecimal sumSalesInRange(@Param("businessId") UUID businessId,
+                                          @Param("fromDate") LocalDate fromDate,
+                                          @Param("toDate") LocalDate toDate);
+
+    @Query("""
+            select coalesce(sum(i.grandTotal - i.amountPaid), 0) from Invoice i
+            where i.businessId = :businessId
+              and i.status in (com.saasbilling.entity.InvoiceStatus.ISSUED, com.saasbilling.entity.InvoiceStatus.PARTIALLY_PAID, com.saasbilling.entity.InvoiceStatus.OVERDUE)
+            """)
+    java.math.BigDecimal sumPendingBalance(@Param("businessId") UUID businessId);
+
+    @Query("""
+            select coalesce(sum(i.amountPaid), 0) from Invoice i
+            where i.businessId = :businessId
+              and i.status <> com.saasbilling.entity.InvoiceStatus.DRAFT
+              and i.status <> com.saasbilling.entity.InvoiceStatus.CANCELLED
+            """)
+    java.math.BigDecimal sumPaidAmount(@Param("businessId") UUID businessId);
+
+    @Query("""
+            select count(i) from Invoice i
+            where i.businessId = :businessId
+              and i.status <> com.saasbilling.entity.InvoiceStatus.DRAFT
+              and i.status <> com.saasbilling.entity.InvoiceStatus.CANCELLED
+            """)
+    long countIssuedInvoices(@Param("businessId") UUID businessId);
 }

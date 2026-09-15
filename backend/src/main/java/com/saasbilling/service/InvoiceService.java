@@ -380,6 +380,40 @@ public class InvoiceService {
         invoice.setTerms(request.terms());
     }
 
+    /**
+     * Called by PaymentService after every payment is recorded or
+     * voided. Recomputes amount_paid from the authoritative sum of
+     * non-voided payments (never incrementally adjusted, so it can't
+     * drift) and rolls the status forward/back accordingly. Does not
+     * touch a CANCELLED invoice's status.
+     */
+    @Transactional
+    public void applyAmountPaid(UUID invoiceId, UUID businessId, BigDecimal amountPaid) {
+        Invoice invoice = invoiceRepository.findByIdAndBusinessId(invoiceId, businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
+
+        invoice.setAmountPaid(amountPaid);
+
+        if (invoice.getStatus() != InvoiceStatus.CANCELLED) {
+            boolean fullyPaid = invoice.getGrandTotal().compareTo(BigDecimal.ZERO) > 0
+                    && amountPaid.compareTo(invoice.getGrandTotal()) >= 0;
+
+            if (fullyPaid) {
+                invoice.setStatus(InvoiceStatus.PAID);
+            } else if (amountPaid.compareTo(BigDecimal.ZERO) > 0) {
+                invoice.setStatus(InvoiceStatus.PARTIALLY_PAID);
+            } else if (invoice.getStatus() == InvoiceStatus.PAID || invoice.getStatus() == InvoiceStatus.PARTIALLY_PAID) {
+                // Every payment against this invoice was voided - revert to ISSUED.
+                // If it's also past due, the OVERDUE sweep (InvoiceRepository#findOverdueCandidates)
+                // will pick it back up; we don't duplicate that date logic here.
+                invoice.setStatus(InvoiceStatus.ISSUED);
+            }
+        }
+
+        invoiceRepository.save(invoice);
+    }
+
+    // -----------------------------------------------------------------
     private Invoice getOwnedWithItemsOrThrow(UUID id, UUID businessId) {
         return invoiceRepository.findWithItemsByIdAndBusinessId(id, businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));

@@ -4,6 +4,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth/auth.service';
+import { DashboardSummary } from '../../core/models/dashboard.model';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,7 +13,8 @@ import { AuthService } from '../../core/auth/auth.service';
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
-  readonly me = signal<Record<string, unknown> | null>(null);
+  readonly summary = signal<DashboardSummary | null>(null);
+  readonly loading = signal(true);
 
   constructor(
     private http: HttpClient,
@@ -20,8 +22,12 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.http.get<Record<string, unknown>>(`${environment.apiBaseUrl}/me`).subscribe({
-      next: (res) => this.me.set(res),
+    this.http.get<DashboardSummary>(`${environment.apiBaseUrl}/dashboard`).subscribe({
+      next: (res) => {
+        this.summary.set(res);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false),
     });
   }
 }

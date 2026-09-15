@@ -17,6 +17,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     boolean existsByIdAndBusinessId(UUID id, UUID businessId);
 
+    long countByBusinessIdAndStatus(UUID businessId, ActiveStatus status);
+
     boolean existsByBusinessIdAndSkuIgnoreCase(UUID businessId, String sku);
 
     // Used when checking for duplicate SKU on update - excludes the product being edited.

@@ -20,6 +20,8 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
 
     boolean existsByIdAndBusinessId(UUID id, UUID businessId);
 
+    long countByBusinessIdAndStatus(UUID businessId, com.saasbilling.entity.ActiveStatus status);
+
     /**
      * Search across name/phone/email/gstin, scoped to the tenant, with
      * optional free-text keyword and optional status filter. Both filters

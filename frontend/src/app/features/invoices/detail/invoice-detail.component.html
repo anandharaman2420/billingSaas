@@ -10,10 +10,49 @@
       <button *ngIf="inv.status === 'DRAFT' && canManage()" class="btn-primary" [disabled]="actionInProgress()" (click)="issue()">
         Issue invoice
       </button>
+      <button *ngIf="canRecordPayment()" class="btn-primary" (click)="togglePaymentForm()">
+        {{ showPaymentForm() ? 'Cancel' : 'Record payment' }}
+      </button>
       <button *ngIf="inv.status !== 'CANCELLED' && canManage()" [disabled]="actionInProgress()" (click)="cancel()">
         Cancel
       </button>
     </div>
+  </div>
+
+  <div class="card" *ngIf="showPaymentForm()" style="margin-bottom: 16px;">
+    <h3 style="margin-top: 0;">Record a payment</h3>
+    <div class="alert-error" *ngIf="paymentError()">{{ paymentError() }}</div>
+    <form [formGroup]="paymentForm" (ngSubmit)="submitPayment()">
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>Amount (₹) *</label>
+          <input type="number" formControlName="amount" min="0.01" step="0.01" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Payment date *</label>
+          <input type="date" formControlName="paymentDate" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Method *</label>
+          <select formControlName="paymentMethod">
+            <option *ngFor="let m of paymentMethods" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>Reference number</label>
+          <input formControlName="referenceNumber" placeholder="UPI/cheque/txn ref" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Notes</label>
+          <input formControlName="notes" />
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="actionInProgress()">
+        {{ actionInProgress() ? 'Saving…' : 'Save payment' }}
+      </button>
+    </form>
   </div>
 
   <div class="card" style="margin-bottom: 16px;">
@@ -88,6 +127,32 @@
         <span>Amount paid</span><span>₹{{ inv.amountPaid | number: '1.2-2' }}</span>
       </div>
     </div>
+  </div>
+
+  <div class="card" *ngIf="payments().length > 0" style="margin-top: 16px;">
+    <h3 style="margin-top: 0;">Payment history</h3>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
+          <th style="padding: 8px 0;">Date</th>
+          <th style="padding: 8px 0;">Method</th>
+          <th style="padding: 8px 0;">Reference</th>
+          <th style="padding: 8px 0; text-align: right;">Amount</th>
+          <th style="padding: 8px 0;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of payments()" style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 8px 0;">{{ p.paymentDate | date: 'dd MMM yyyy' }}</td>
+          <td style="padding: 8px 0;">{{ p.paymentMethod }}</td>
+          <td style="padding: 8px 0;">{{ p.referenceNumber || '—' }}</td>
+          <td style="padding: 8px 0; text-align: right;">₹{{ p.amount | number: '1.2-2' }}</td>
+          <td style="padding: 8px 0; text-align: right;">
+            <button *ngIf="canManage()" (click)="voidPayment(p)">Void</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
   <div class="card" *ngIf="inv.notes || inv.terms" style="margin-top: 16px;">
