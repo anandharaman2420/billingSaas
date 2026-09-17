@@ -1,0 +1,53 @@
+<div style="max-width: 480px; margin: 32px auto;" class="card">
+  <h1 style="margin-top: 0;">{{ expenseId ? 'Edit expense' : 'Add expense' }}</h1>
+
+  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-field">
+      <label>Description *</label>
+      <input formControlName="description" />
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      <div class="form-field" style="flex: 1;">
+        <label>Amount (₹) *</label>
+        <input type="number" formControlName="amount" min="0.01" step="0.01" />
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <label>Date *</label>
+        <input type="date" formControlName="expenseDate" />
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px;">
+      <div class="form-field" style="flex: 1;">
+        <label>Category</label>
+        <select formControlName="categoryId">
+          <option value="">Uncategorized</option>
+          <option *ngFor="let c of categories()" [value]="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+      <div class="form-field" style="flex: 1;">
+        <label>Payment method *</label>
+        <select formControlName="paymentMethod">
+          <option *ngFor="let m of paymentMethods" [value]="m">{{ m }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label>Reference number</label>
+      <input formControlName="referenceNumber" />
+    </div>
+
+    <div class="form-field">
+      <label>Notes</label>
+      <input formControlName="notes" />
+    </div>
+
+    <button type="submit" class="btn-primary" [disabled]="loading()">
+      {{ loading() ? 'Saving…' : 'Save expense' }}
+    </button>
+  </form>
+</div>

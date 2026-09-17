@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -89,4 +90,55 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
               and i.status <> com.saasbilling.entity.InvoiceStatus.CANCELLED
             """)
     long countIssuedInvoices(@Param("businessId") UUID businessId);
+
+    // --- Report aggregates ---
+
+    interface DailySalesRow {
+        LocalDate getInvoiceDate();
+        java.math.BigDecimal getTotal();
+        long getCount();
+    }
+
+    @Query("""
+            select i.invoiceDate as invoiceDate, sum(i.grandTotal) as total, count(i) as count
+            from Invoice i
+            where i.businessId = :businessId
+              and i.status <> com.saasbilling.entity.InvoiceStatus.DRAFT
+              and i.status <> com.saasbilling.entity.InvoiceStatus.CANCELLED
+              and i.invoiceDate >= :fromDate and i.invoiceDate <= :toDate
+            group by i.invoiceDate
+            order by i.invoiceDate
+            """)
+    List<DailySalesRow> dailySalesInRange(@Param("businessId") UUID businessId,
+                                           @Param("fromDate") LocalDate fromDate,
+                                           @Param("toDate") LocalDate toDate);
+
+    interface StatusCountRow {
+        InvoiceStatus getStatus();
+        long getCount();
+    }
+
+    @Query("select i.status as status, count(i) as count from Invoice i where i.businessId = :businessId group by i.status")
+    List<StatusCountRow> countByStatus(@Param("businessId") UUID businessId);
+
+    interface CustomerSalesRow {
+        UUID getCustomerId();
+        java.math.BigDecimal getTotal();
+        long getInvoiceCount();
+    }
+
+    @Query("""
+            select i.customerId as customerId, sum(i.grandTotal) as total, count(i) as invoiceCount
+            from Invoice i
+            where i.businessId = :businessId
+              and i.status <> com.saasbilling.entity.InvoiceStatus.DRAFT
+              and i.status <> com.saasbilling.entity.InvoiceStatus.CANCELLED
+              and i.invoiceDate >= :fromDate and i.invoiceDate <= :toDate
+            group by i.customerId
+            order by sum(i.grandTotal) desc
+            """)
+    List<CustomerSalesRow> topCustomersInRange(@Param("businessId") UUID businessId,
+                                                @Param("fromDate") LocalDate fromDate,
+                                                @Param("toDate") LocalDate toDate,
+                                                org.springframework.data.domain.Pageable pageable);
 }

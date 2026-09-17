@@ -111,9 +111,36 @@ export const routes: Routes = [
           import('./features/services/form/service-form.component').then((m) => m.ServiceFormComponent),
       },
 
+      // --- Expenses: business overhead data, restricted to
+      // OWNER/ADMIN/MANAGER both here and server-side. ---
+      {
+        path: 'expenses',
+        canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
+        loadComponent: () =>
+          import('./features/expenses/list/expense-list.component').then((m) => m.ExpenseListComponent),
+      },
+      {
+        path: 'expenses/new',
+        canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
+        loadComponent: () =>
+          import('./features/expenses/form/expense-form.component').then((m) => m.ExpenseFormComponent),
+      },
+      {
+        path: 'expenses/:id',
+        canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
+        loadComponent: () =>
+          import('./features/expenses/form/expense-form.component').then((m) => m.ExpenseFormComponent),
+      },
+
+      // --- Reports: same role policy as Expenses. ---
+      {
+        path: 'reports',
+        canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
+        loadComponent: () =>
+          import('./features/reports/reports.component').then((m) => m.ReportsComponent),
+      },
+
       // Future phases plug in here, e.g.:
-      // { path: 'invoices', loadChildren: () => import('./features/invoices/invoices.routes') },
-      // { path: 'payments',  loadChildren: () => import('./features/payments/payments.routes') },
       // { path: 'settings',  canActivate: [roleGuard('OWNER','ADMIN')], loadChildren: () => ... },
 
       {

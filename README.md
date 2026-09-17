@@ -211,6 +211,27 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
 - [x] Tests: partial → full payment status transitions, payment-exceeds-balance rejection, and
       void-reverts-status-and-balance
 
+### Phase 5 — Expenses and Reports
+- [x] Expense tracking (spec section 17): description, amount, date, payment method, category, reference,
+      notes; every new business is seeded with the standard categories (Rent, Electricity, Internet, Salary,
+      Purchase, Transport, Maintenance, Other) via `categories.type = 'EXPENSE'` — reusing the same table
+      Products/Services categories already live in, not a separate one
+- [x] Categories now have a working frontend picker for the first time — the expense form's category
+      dropdown fixes the gap flagged in the Phase 2/3 known-limitations list
+- [x] Reports (spec section 18), all live-queried against the tenant's own data:
+      - **Sales** — daily breakdown + totals for a date range, with CSV export (`/api/reports/sales/export.csv`)
+      - **Invoices** — counts by status
+      - **Payments** — totals by payment method
+      - **Customers** — top customers by revenue in range, plus total outstanding across all open invoices
+      - **Products** — top-selling products by revenue (aggregated from invoice line-item snapshots, so it
+        reflects what was actually billed even if a product was later renamed)
+      - **Expenses** — total and breakdown by category
+- [x] Role policy: Expenses and Reports are both restricted to OWNER/ADMIN/MANAGER for the whole
+      controller — unlike Customers/Products/Invoices, this is financial/overhead data STAFF don't need
+      day-to-day access to
+- [x] Angular: full Expenses CRUD (list/search/create/edit/delete) and a single Reports page with a
+      date-range picker driving all six report sections plus a CSV download link for sales
+
 ## Known limitations (by design, for this phase)
 
 - No email sending yet — password reset tokens are logged server-side only (`AuthService.forgotPassword`);
@@ -223,8 +244,6 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
   production hardening pass (noted in `auth.service.ts`).
 - No Docker Compose for the app itself yet (only for optional local Postgres) — added when deployment
   documentation (spec section 40) is tackled.
-- Categories have a backend CRUD but no dedicated frontend screen yet — the `categoryId` field exists on
-  products/services but there's no UI picker for it
 - Invoice-level `additionalDiscountAmount` is applied **after** tax (a flat rebate off the grand total),
   not proportionally distributed across line items before tax. This is a deliberate MVP simplification —
   proportional pre-tax discount allocation across mixed-tax-rate line items adds real complexity for
@@ -238,12 +257,16 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
 - The dashboard summary endpoint (`GET /api/dashboard`) is currently open to all roles, including STAFF —
   worth revisiting with a `@PreAuthorize` restriction if a business doesn't want staff seeing aggregate
   sales figures
+- Report export only covers CSV, and only for the Sales report — PDF and Excel export (spec section 19),
+  and CSV for the other five reports, are straightforward additions following the same pattern in
+  `ReportController` but weren't all built out to keep this phase's scope contained
 - Backend was not compiled in this environment (no Maven/Maven-Central network access here) — run
   `mvn clean install` locally to verify before deploying.
 
 ## Next recommended phase
 
-**Phase 5: Expenses + Reports** — expense tracking (spec section 17) with configurable categories (reusing
-the `categories` table's `EXPENSE` type already in the schema), and the reporting module (spec section 18):
-sales/invoice/payment/customer/product/expense reports with PDF/Excel/CSV export. A scheduled job to sweep
-overdue invoices (`InvoiceRepository#findOverdueCandidates` is ready) fits naturally alongside this phase.
+**Phase 6: Users + Settings** — inviting/managing team members within a business (spec section 5's role
+management), business profile and invoice settings screens (spec section 21 — logo upload, invoice prefix/
+numbering/tax-mode configuration, currently only editable by direct DB/API access), and user account
+settings (name/email/phone/password). A scheduled job to sweep overdue invoices
+(`InvoiceRepository#findOverdueCandidates`, still unused) fits naturally alongside this phase too.

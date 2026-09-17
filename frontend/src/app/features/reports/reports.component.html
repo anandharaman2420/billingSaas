@@ -1,0 +1,99 @@
+<div style="max-width: 900px; margin: 32px auto;">
+  <h1>Reports</h1>
+
+  <div class="card" style="display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
+    <div class="form-field" style="margin-bottom: 0;">
+      <label>From</label>
+      <input type="date" [(ngModel)]="fromDate" />
+    </div>
+    <div class="form-field" style="margin-bottom: 0;">
+      <label>To</label>
+      <input type="date" [(ngModel)]="toDate" />
+    </div>
+    <button class="btn-primary" (click)="load()">Apply</button>
+    <a [href]="salesCsvUrl" style="margin-left: auto;">Download sales CSV</a>
+  </div>
+
+  <div class="card" style="margin-bottom: 16px;" *ngIf="sales() as s">
+    <h2 style="margin-top: 0;">Sales</h2>
+    <p>
+      <strong>{{ s.totalInvoices }}</strong> invoices totalling
+      <strong>₹{{ s.totalSales | number: '1.2-2' }}</strong> in the selected range.
+    </p>
+    <table style="width: 100%; border-collapse: collapse;" *ngIf="s.dailyBreakdown.length > 0">
+      <thead>
+        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
+          <th style="padding: 6px 0;">Date</th>
+          <th style="padding: 6px 0; text-align: right;">Invoices</th>
+          <th style="padding: 6px 0; text-align: right;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of s.dailyBreakdown">
+          <td style="padding: 4px 0;">{{ d.date | date: 'dd MMM yyyy' }}</td>
+          <td style="padding: 4px 0; text-align: right;">{{ d.invoiceCount }}</td>
+          <td style="padding: 4px 0; text-align: right;">₹{{ d.total | number: '1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-bottom: 16px;" *ngIf="invoices() as inv">
+    <h2 style="margin-top: 0;">Invoices by status</h2>
+    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+      <div *ngFor="let sc of inv.statusCounts">
+        <div style="color: var(--color-text-muted); font-size: 0.85rem;">{{ sc.status }}</div>
+        <div style="font-size: 1.3rem; font-weight: 700;">{{ sc.count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 16px;" *ngIf="payments() as p">
+    <h2 style="margin-top: 0;">Payments by method</h2>
+    <p>Total collected: <strong>₹{{ p.totalCollected | number: '1.2-2' }}</strong></p>
+    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+      <div *ngFor="let m of p.byMethod">
+        <div style="color: var(--color-text-muted); font-size: 0.85rem;">{{ m.method }} ({{ m.count }})</div>
+        <div style="font-size: 1.1rem; font-weight: 700;">₹{{ m.total | number: '1.2-2' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 16px;" *ngIf="customers() as c">
+    <h2 style="margin-top: 0;">Top customers</h2>
+    <p>Total outstanding across all open invoices: <strong>₹{{ c.totalOutstanding | number: '1.2-2' }}</strong></p>
+    <table style="width: 100%; border-collapse: collapse;" *ngIf="c.topCustomers.length > 0">
+      <tbody>
+        <tr *ngFor="let tc of c.topCustomers" style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 6px 0;">{{ tc.customerName }}</td>
+          <td style="padding: 6px 0; text-align: right; color: var(--color-text-muted);">{{ tc.invoiceCount }} invoices</td>
+          <td style="padding: 6px 0; text-align: right; font-weight: 600;">₹{{ tc.total | number: '1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-bottom: 16px;" *ngIf="products() as pr">
+    <h2 style="margin-top: 0;">Top-selling products</h2>
+    <table style="width: 100%; border-collapse: collapse;" *ngIf="pr.topProducts.length > 0">
+      <tbody>
+        <tr *ngFor="let tp of pr.topProducts" style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 6px 0;">{{ tp.productName }}</td>
+          <td style="padding: 6px 0; text-align: right; color: var(--color-text-muted);">{{ tp.totalQuantity }} sold</td>
+          <td style="padding: 6px 0; text-align: right; font-weight: 600;">₹{{ tp.totalAmount | number: '1.2-2' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" *ngIf="expenses() as e">
+    <h2 style="margin-top: 0;">Expenses</h2>
+    <p>Total: <strong>₹{{ e.totalExpenses | number: '1.2-2' }}</strong></p>
+    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+      <div *ngFor="let cat of e.byCategory">
+        <div style="color: var(--color-text-muted); font-size: 0.85rem;">{{ cat.categoryName }}</div>
+        <div style="font-size: 1.1rem; font-weight: 700;">₹{{ cat.total | number: '1.2-2' }}</div>
+      </div>
+    </div>
+  </div>
+</div>

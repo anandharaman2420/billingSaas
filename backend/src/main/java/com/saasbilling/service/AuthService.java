@@ -7,6 +7,7 @@ import com.saasbilling.exception.DuplicateResourceException;
 import com.saasbilling.exception.ResourceNotFoundException;
 import com.saasbilling.repository.BusinessRepository;
 import com.saasbilling.repository.BusinessSettingsRepository;
+import com.saasbilling.repository.CategoryRepository;
 import com.saasbilling.repository.RefreshTokenRepository;
 import com.saasbilling.repository.UserRepository;
 import com.saasbilling.security.JwtService;
@@ -35,14 +36,19 @@ public class AuthService {
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
     private final BusinessSettingsRepository businessSettingsRepository;
+    private final CategoryRepository categoryRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditLogService auditLogService;
 
+    private static final java.util.List<String> DEFAULT_EXPENSE_CATEGORIES = java.util.List.of(
+            "Rent", "Electricity", "Internet", "Salary", "Purchase", "Transport", "Maintenance", "Other");
+
     public AuthService(BusinessRepository businessRepository,
                         UserRepository userRepository,
                         BusinessSettingsRepository businessSettingsRepository,
+                        CategoryRepository categoryRepository,
                         RefreshTokenRepository refreshTokenRepository,
                         PasswordEncoder passwordEncoder,
                         JwtService jwtService,
@@ -50,6 +56,7 @@ public class AuthService {
         this.businessRepository = businessRepository;
         this.userRepository = userRepository;
         this.businessSettingsRepository = businessSettingsRepository;
+        this.categoryRepository = categoryRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -99,9 +106,22 @@ public class AuthService {
         settings.setBusiness(business);
         businessSettingsRepository.save(settings);
 
+        seedDefaultExpenseCategories(business.getId());
+
         auditLogService.record(business.getId(), owner.getId(), "BUSINESS_REGISTERED", "BUSINESS", business.getId(), null, null);
 
         return buildAuthResponse(owner, business);
+    }
+
+    /** Spec section 17: expense categories are configurable, but every new business starts with these common ones. */
+    private void seedDefaultExpenseCategories(java.util.UUID businessId) {
+        for (String name : DEFAULT_EXPENSE_CATEGORIES) {
+            Category category = new Category();
+            category.setBusinessId(businessId);
+            category.setName(name);
+            category.setType(CategoryType.EXPENSE);
+            categoryRepository.save(category);
+        }
     }
 
     // -----------------------------------------------------------------

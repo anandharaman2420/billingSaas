@@ -1,0 +1,54 @@
+<div style="max-width: 960px; margin: 32px auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h1 style="margin: 0;">Expenses</h1>
+    <a routerLink="/expenses/new" class="btn-primary" style="text-decoration: none;">+ Add expense</a>
+  </div>
+
+  <input
+    type="text"
+    placeholder="Search by description…"
+    [(ngModel)]="keyword"
+    (ngModelChange)="onKeywordChange()"
+    style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius); margin-bottom: 16px;"
+  />
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
+          <th style="padding: 12px;">Date</th>
+          <th style="padding: 12px;">Description</th>
+          <th style="padding: 12px;">Method</th>
+          <th style="padding: 12px; text-align: right;">Amount</th>
+          <th style="padding: 12px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let expense of result()?.content" style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 12px;">{{ expense.expenseDate | date: 'dd MMM yyyy' }}</td>
+          <td style="padding: 12px;">
+            <a [routerLink]="['/expenses', expense.id]">{{ expense.description }}</a>
+          </td>
+          <td style="padding: 12px;">{{ expense.paymentMethod }}</td>
+          <td style="padding: 12px; text-align: right;">₹{{ expense.amount | number: '1.2-2' }}</td>
+          <td style="padding: 12px; text-align: right;">
+            <button (click)="remove(expense)">Delete</button>
+          </td>
+        </tr>
+        <tr *ngIf="!loading() && result()?.content?.length === 0">
+          <td colspan="5" style="padding: 24px; text-align: center; color: var(--color-text-muted);">
+            No expenses found.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+    <span style="color: var(--color-text-muted);">{{ result()?.totalElements || 0 }} total</span>
+    <div style="display: flex; gap: 8px;">
+      <button (click)="prevPage()" [disabled]="result()?.first">Previous</button>
+      <button (click)="nextPage()" [disabled]="result()?.last">Next</button>
+    </div>
+  </div>
+</div>

@@ -55,4 +55,21 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     BigDecimal sumActiveAmountInRange(@Param("businessId") UUID businessId,
                                        @Param("fromDate") LocalDate fromDate,
                                        @Param("toDate") LocalDate toDate);
+
+    interface MethodTotalRow {
+        PaymentMethod getPaymentMethod();
+        BigDecimal getTotal();
+        long getCount();
+    }
+
+    @Query("""
+            select p.paymentMethod as paymentMethod, sum(p.amount) as total, count(p) as count
+            from Payment p
+            where p.businessId = :businessId and p.voided = false
+              and p.paymentDate >= :fromDate and p.paymentDate <= :toDate
+            group by p.paymentMethod
+            """)
+    List<MethodTotalRow> sumByMethodInRange(@Param("businessId") UUID businessId,
+                                             @Param("fromDate") LocalDate fromDate,
+                                             @Param("toDate") LocalDate toDate);
 }
