@@ -140,8 +140,44 @@ export const routes: Routes = [
           import('./features/reports/reports.component').then((m) => m.ReportsComponent),
       },
 
-      // Future phases plug in here, e.g.:
-      // { path: 'settings',  canActivate: [roleGuard('OWNER','ADMIN')], loadChildren: () => ... },
+      // --- Users: team management restricted to OWNER/ADMIN server-side
+      // (UserController @PreAuthorize); roleGuard here just keeps STAFF
+      // from landing on a screen every action on which would be rejected. ---
+      {
+        path: 'users',
+        canActivate: [roleGuard('OWNER', 'ADMIN')],
+        loadComponent: () =>
+          import('./features/users/list/user-list.component').then((m) => m.UserListComponent),
+      },
+      {
+        path: 'users/new',
+        canActivate: [roleGuard('OWNER', 'ADMIN')],
+        loadComponent: () =>
+          import('./features/users/form/user-form.component').then((m) => m.UserFormComponent),
+      },
+      {
+        path: 'users/:id',
+        canActivate: [roleGuard('OWNER', 'ADMIN')],
+        loadComponent: () =>
+          import('./features/users/form/user-form.component').then((m) => m.UserFormComponent),
+      },
+
+      // --- Settings: business profile + invoice settings, OWNER/ADMIN only. ---
+      {
+        path: 'settings',
+        canActivate: [roleGuard('OWNER', 'ADMIN')],
+        loadComponent: () =>
+          import('./features/settings/settings.component').then((m) => m.SettingsComponent),
+      },
+
+      // --- My profile: every authenticated user, any role. ---
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/profile/profile.component').then((m) => m.ProfileComponent),
+      },
+
+      // Future phases plug in here.
 
       {
         path: 'forbidden',

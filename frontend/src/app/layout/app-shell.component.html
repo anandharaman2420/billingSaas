@@ -11,14 +11,15 @@
       <a routerLink="/invoices" routerLinkActive="active-nav" class="nav-link">Invoices</a>
       <a *ngIf="authService.hasRole('OWNER','ADMIN','MANAGER')" routerLink="/expenses" routerLinkActive="active-nav" class="nav-link">Expenses</a>
       <a *ngIf="authService.hasRole('OWNER','ADMIN','MANAGER')" routerLink="/reports" routerLinkActive="active-nav" class="nav-link">Reports</a>
-      <!-- Settings route plugs in here in a later phase -->
+      <a *ngIf="authService.hasRole('OWNER','ADMIN')" routerLink="/users" routerLinkActive="active-nav" class="nav-link">Team</a>
+      <a *ngIf="authService.hasRole('OWNER','ADMIN')" routerLink="/settings" routerLinkActive="active-nav" class="nav-link">Settings</a>
     </nav>
   </aside>
 
   <div style="flex: 1; display: flex; flex-direction: column;">
     <header style="display: flex; justify-content: flex-end; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
       <span style="margin-right: 16px; color: var(--color-text-muted);">
-        {{ authService.currentUser()?.fullName }} · {{ authService.currentUser()?.role }}
+        <a routerLink="/profile" style="color: inherit;">{{ authService.currentUser()?.fullName }} · {{ authService.currentUser()?.role }}</a>
       </span>
       <button (click)="logout()">Log out</button>
     </header>

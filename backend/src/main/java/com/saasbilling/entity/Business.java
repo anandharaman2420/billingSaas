@@ -54,6 +54,9 @@ public class Business extends BaseEntity {
     @Column(name = "logo_url", length = 500)
     private String logoUrl;
 
+    @Column(length = 255)
+    private String website;
+
     @Column(length = 30, nullable = false)
     private String plan = "FREE";
 

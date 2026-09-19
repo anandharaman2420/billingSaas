@@ -31,4 +31,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     // (open-in-view is disabled on purpose - see application.yml).
     @Query("select u from User u join fetch u.business where u.id = :id and u.business.id = :businessId")
     Optional<User> findWithBusinessByIdAndBusinessId(@Param("id") UUID id, @Param("businessId") UUID businessId);
+
+    org.springframework.data.domain.Page<User> findByBusinessId(UUID businessId, org.springframework.data.domain.Pageable pageable);
+
+    long countByBusinessIdAndRoleAndStatus(UUID businessId, com.saasbilling.entity.UserRole role, com.saasbilling.entity.UserStatus status);
 }

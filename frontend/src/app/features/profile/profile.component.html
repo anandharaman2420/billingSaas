@@ -1,0 +1,54 @@
+<div style="max-width: 480px; margin: 32px auto;">
+  <h1>My profile</h1>
+
+  <div class="card" style="margin-bottom: 24px;">
+    <h2 style="margin-top: 0;">Profile details</h2>
+    <div class="alert-error" *ngIf="profileError()">{{ profileError() }}</div>
+    <p *ngIf="profileSaved()" style="color: var(--color-success);">Saved.</p>
+
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+      <div class="form-field">
+        <label>Full name *</label>
+        <input formControlName="fullName" />
+      </div>
+      <div class="form-field">
+        <label>Phone</label>
+        <input formControlName="phone" />
+      </div>
+      <div class="form-field">
+        <label>Email</label>
+        <input [value]="authService.currentUser()?.email" disabled />
+      </div>
+      <div class="form-field">
+        <label>Role</label>
+        <input [value]="authService.currentUser()?.role" disabled />
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="profileLoading()">
+        {{ profileLoading() ? 'Saving…' : 'Save profile' }}
+      </button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top: 0;">Change password</h2>
+    <div class="alert-error" *ngIf="passwordError()">{{ passwordError() }}</div>
+    <p *ngIf="passwordSaved()" style="color: var(--color-success);">Password changed.</p>
+
+    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+      <div class="form-field">
+        <label>Current password *</label>
+        <input formControlName="currentPassword" type="password" autocomplete="current-password" />
+      </div>
+      <div class="form-field">
+        <label>New password *</label>
+        <input formControlName="newPassword" type="password" autocomplete="new-password" />
+        <span class="form-error" *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.invalid">
+          Minimum 8 characters
+        </span>
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="passwordLoading()">
+        {{ passwordLoading() ? 'Saving…' : 'Change password' }}
+      </button>
+    </form>
+  </div>
+</div>

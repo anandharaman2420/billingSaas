@@ -1,0 +1,41 @@
+<div style="max-width: 480px; margin: 32px auto;" class="card">
+  <h1 style="margin-top: 0;">{{ userId ? 'Edit team member' : 'Add team member' }}</h1>
+
+  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-field">
+      <label>Full name *</label>
+      <input formControlName="fullName" />
+    </div>
+
+    <div class="form-field">
+      <label>Email *</label>
+      <input formControlName="email" type="email" />
+    </div>
+
+    <div class="form-field" *ngIf="!userId">
+      <label>Initial password *</label>
+      <input formControlName="password" type="password" autocomplete="new-password" />
+      <span class="form-error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
+        Minimum 8 characters
+      </span>
+    </div>
+
+    <div class="form-field">
+      <label>Phone</label>
+      <input formControlName="phone" />
+    </div>
+
+    <div class="form-field">
+      <label>Role *</label>
+      <select formControlName="role">
+        <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn-primary" [disabled]="loading()">
+      {{ loading() ? 'Saving…' : 'Save' }}
+    </button>
+  </form>
+</div>

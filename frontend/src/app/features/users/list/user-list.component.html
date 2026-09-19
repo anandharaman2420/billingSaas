@@ -1,0 +1,48 @@
+<div style="max-width: 960px; margin: 32px auto;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <h1 style="margin: 0;">Team members</h1>
+    <a routerLink="/users/new" class="btn-primary" style="text-decoration: none;">+ Add team member</a>
+  </div>
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
+          <th style="padding: 12px;">Name</th>
+          <th style="padding: 12px;">Email</th>
+          <th style="padding: 12px;">Role</th>
+          <th style="padding: 12px;">Status</th>
+          <th style="padding: 12px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of result()?.content" style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 12px;">
+            <a [routerLink]="['/users', user.id]">{{ user.fullName }}</a>
+            <span *ngIf="isSelf(user)" style="color: var(--color-text-muted);"> (you)</span>
+          </td>
+          <td style="padding: 12px;">{{ user.email }}</td>
+          <td style="padding: 12px;">{{ user.role }}</td>
+          <td style="padding: 12px;">{{ user.status }}</td>
+          <td style="padding: 12px; text-align: right;">
+            <button *ngIf="user.status === 'ACTIVE' && !isSelf(user)" (click)="disable(user)">Disable</button>
+            <button *ngIf="user.status === 'DISABLED'" (click)="enable(user)">Enable</button>
+          </td>
+        </tr>
+        <tr *ngIf="!loading() && result()?.content?.length === 0">
+          <td colspan="5" style="padding: 24px; text-align: center; color: var(--color-text-muted);">
+            No team members found.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+    <span style="color: var(--color-text-muted);">{{ result()?.totalElements || 0 }} total</span>
+    <div style="display: flex; gap: 8px;">
+      <button (click)="prevPage()" [disabled]="result()?.first">Previous</button>
+      <button (click)="nextPage()" [disabled]="result()?.last">Next</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,128 @@
+<div style="max-width: 640px; margin: 32px auto;">
+  <h1>Settings</h1>
+
+  <div class="card" style="margin-bottom: 24px;">
+    <h2 style="margin-top: 0;">Business profile</h2>
+    <div class="alert-error" *ngIf="profileError()">{{ profileError() }}</div>
+    <p *ngIf="profileSaved()" style="color: var(--color-success);">Saved.</p>
+
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+      <div class="form-field">
+        <label>Business name *</label>
+        <input formControlName="businessName" />
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>Business type</label>
+          <input formControlName="businessType" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>GSTIN</label>
+          <input formControlName="gstin" />
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Address</label>
+        <input formControlName="addressLine" />
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>City</label>
+          <input formControlName="city" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>State</label>
+          <input formControlName="state" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Pincode</label>
+          <input formControlName="pincode" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>Phone</label>
+          <input formControlName="phone" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Email</label>
+          <input formControlName="email" type="email" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>Website</label>
+          <input formControlName="website" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Logo URL</label>
+          <input formControlName="logoUrl" />
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="profileLoading()">
+        {{ profileLoading() ? 'Saving…' : 'Save business profile' }}
+      </button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top: 0;">Invoice settings</h2>
+    <div class="alert-error" *ngIf="settingsError()">{{ settingsError() }}</div>
+    <p *ngIf="settingsSaved()" style="color: var(--color-success);">Saved.</p>
+
+    <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>Invoice prefix *</label>
+          <input formControlName="invoicePrefix" />
+        </div>
+        <div class="form-field" style="flex: 2;">
+          <label>Number format *</label>
+          <input formControlName="invoiceNumberFormat" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>Next invoice sequence *</label>
+          <input type="number" formControlName="invoiceNextSequence" min="1" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Default due days *</label>
+          <input type="number" formControlName="defaultDueDays" min="0" />
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <div class="form-field" style="flex: 1;">
+          <label>Currency *</label>
+          <input formControlName="currency" />
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Tax mode *</label>
+          <select formControlName="taxMode">
+            <option value="EXCLUSIVE">Exclusive of tax</option>
+            <option value="INCLUSIVE">Inclusive of tax</option>
+          </select>
+        </div>
+        <div class="form-field" style="flex: 1;">
+          <label>Theme</label>
+          <select formControlName="themePreference">
+            <option value="LIGHT">Light</option>
+            <option value="DARK">Dark</option>
+            <option value="SYSTEM">System</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Default invoice notes</label>
+        <input formControlName="invoiceNotes" />
+      </div>
+      <div class="form-field">
+        <label>Default terms &amp; conditions</label>
+        <input formControlName="invoiceTerms" />
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="settingsLoading()">
+        {{ settingsLoading() ? 'Saving…' : 'Save invoice settings' }}
+      </button>
+    </form>
+  </div>
+</div>

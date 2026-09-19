@@ -232,14 +232,34 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
 - [x] Angular: full Expenses CRUD (list/search/create/edit/delete) and a single Reports page with a
       date-range picker driving all six report sections plus a CSV download link for sales
 
+### Phase 6 — Users and Settings
+- [x] Team member management (spec section 5/6): OWNER/ADMIN can list, create, edit (name/phone/role), and
+      disable/enable team members
+- [x] Privilege-escalation guard: only an OWNER can create/edit another OWNER account or grant the OWNER
+      role — an ADMIN managing users can touch STAFF/MANAGER/ADMIN accounts but never an OWNER's, closing
+      off the obvious self-promotion path
+- [x] Last-owner lockout guard: a business can never end up with zero active OWNERs — disabling or
+      demoting the sole remaining OWNER is rejected server-side
+- [x] Self-service profile: any authenticated user (any role) can update their own name/phone
+      (`PUT /api/users/me`) and change their own password (reusing the `AuthService.changePassword`
+      endpoint that's existed since Phase 1 but had no frontend UI until now)
+- [x] Business profile settings (spec section 21): name, type, address, phone, email, website, logo URL,
+      GSTIN — editable by OWNER/ADMIN. Added a `website` column (migration V7) that was missing since Phase 1
+- [x] Invoice settings (spec section 21): prefix, number format, next sequence, financial year start month,
+      default due days, currency, tax mode, default notes/terms, theme preference — editable by OWNER/ADMIN,
+      with a guard against lowering the next-sequence counter below what's already been issued (which would
+      risk a future invoice colliding with an existing invoice number)
+- [x] Angular: Team list/create/edit pages, a Settings page combining both business-profile and
+      invoice-settings forms, and a My Profile page (name/phone + change password) linked from the top bar
+- [x] Tests: last-owner-cannot-be-disabled, admin-cannot-create-or-edit-an-owner, owner-can-create-an-admin
+
 ## Known limitations (by design, for this phase)
 
 - No email sending yet — password reset tokens are logged server-side only (`AuthService.forgotPassword`);
-  wire up an email provider before relying on this in production.
-- Account activation via email link is stubbed out — users are activated immediately on registration for
-  MVP convenience. Swap `UserStatus.ACTIVE` → `PENDING_ACTIVATION` + email verification when ready.
-- Fine-grained permissions (e.g. "MANAGER can edit products but not delete them") are not yet enforced;
-  only the four roles exist. Add `@PreAuthorize` checks per endpoint as each module is built.
+  wire up an email provider before relying on this in production. New team members created via
+  `POST /api/users` are activated immediately with an OWNER/ADMIN-chosen password, same MVP simplification
+  as business registration — a real email-invite flow (spec section 6's implied invitation flow) is a
+  natural next addition once email sending exists.
 - Tokens are stored in `localStorage` on the frontend for simplicity. Consider httpOnly cookies for a
   production hardening pass (noted in `auth.service.ts`).
 - No Docker Compose for the app itself yet (only for optional local Postgres) — added when deployment
@@ -259,14 +279,18 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
   sales figures
 - Report export only covers CSV, and only for the Sales report — PDF and Excel export (spec section 19),
   and CSV for the other five reports, are straightforward additions following the same pattern in
-  `ReportController` but weren't all built out to keep this phase's scope contained
+  `ReportController` but weren't all built out to keep that phase's scope contained
+- Logo upload is a plain URL field (`logoUrl`), not a file upload — a real image upload (to S3-compatible
+  storage or similar) is a future addition once file storage is wired up
 - Backend was not compiled in this environment (no Maven/Maven-Central network access here) — run
   `mvn clean install` locally to verify before deploying.
 
 ## Next recommended phase
 
-**Phase 6: Users + Settings** — inviting/managing team members within a business (spec section 5's role
-management), business profile and invoice settings screens (spec section 21 — logo upload, invoice prefix/
-numbering/tax-mode configuration, currently only editable by direct DB/API access), and user account
-settings (name/email/phone/password). A scheduled job to sweep overdue invoices
-(`InvoiceRepository#findOverdueCandidates`, still unused) fits naturally alongside this phase too.
+**Phase 7: Search polish + SaaS plan limits + deployment docs** — global search across
+customers/products/services/invoices (spec section 22, currently each module has its own search but there's
+no unified search bar), the plan/limits foundation from spec section 37 (Free/Basic/Professional/Business
+tiers with configurable limits on users/customers/invoices), and the deployment documentation + Docker
+Compose for the full app (spec section 40) that every phase so far has deferred. A scheduled job to sweep
+overdue invoices (`InvoiceRepository#findOverdueCandidates`, still unused) fits naturally alongside this
+phase too.
