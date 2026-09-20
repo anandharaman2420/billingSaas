@@ -1,0 +1,47 @@
+<div style="position: relative; width: 320px;">
+  <input
+    type="text"
+    placeholder="Search customers, products, invoices…"
+    [(ngModel)]="query"
+    (ngModelChange)="onInput()"
+    (focus)="open.set(!!results())"
+    style="width: 100%; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-bg);"
+  />
+
+  <div
+    *ngIf="open() && results() as r"
+    style="position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-height: 400px; overflow-y: auto; z-index: 20;"
+  >
+    <div *ngIf="!hasAnyResults()" style="padding: 16px; color: var(--color-text-muted); text-align: center;">
+      No results
+    </div>
+
+    <div *ngIf="r.customers.length > 0" style="padding: 8px 0;">
+      <div style="padding: 4px 12px; font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">Customers</div>
+      <div *ngFor="let c of r.customers" (click)="goTo(['/customers', c.id])" style="padding: 8px 12px; cursor: pointer;" class="nav-link">
+        {{ c.name }} <span *ngIf="c.phone" style="color: var(--color-text-muted);">· {{ c.phone }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="r.products.length > 0" style="padding: 8px 0; border-top: 1px solid var(--color-border);">
+      <div style="padding: 4px 12px; font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">Products</div>
+      <div *ngFor="let p of r.products" (click)="goTo(['/products', p.id])" style="padding: 8px 12px; cursor: pointer;" class="nav-link">
+        {{ p.name }} <span *ngIf="p.sku" style="color: var(--color-text-muted);">· {{ p.sku }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="r.services.length > 0" style="padding: 8px 0; border-top: 1px solid var(--color-border);">
+      <div style="padding: 4px 12px; font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">Services</div>
+      <div *ngFor="let s of r.services" (click)="goTo(['/services', s.id])" style="padding: 8px 12px; cursor: pointer;" class="nav-link">
+        {{ s.name }}
+      </div>
+    </div>
+
+    <div *ngIf="r.invoices.length > 0" style="padding: 8px 0; border-top: 1px solid var(--color-border);">
+      <div style="padding: 4px 12px; font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">Invoices</div>
+      <div *ngFor="let i of r.invoices" (click)="goTo(['/invoices', i.id])" style="padding: 8px 12px; cursor: pointer;" class="nav-link">
+        {{ i.invoiceNumber || 'DRAFT' }} <span style="color: var(--color-text-muted);">· ₹{{ i.grandTotal | number: '1.2-2' }} · {{ i.status }}</span>
+      </div>
+    </div>
+  </div>
+</div>

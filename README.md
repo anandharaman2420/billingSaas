@@ -113,6 +113,47 @@ cannot be fetched by scoping the query to Business B's id, which is the isolatio
 multi-tenant model depends on. It runs against an in-memory H2 database (`application-test.yml`), since the
 Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
 
+## Production deployment (Docker Compose)
+
+The full stack — PostgreSQL, the Spring Boot backend, and the Angular frontend behind nginx — can be run as
+three containers with Docker Compose:
+
+```bash
+cp .env.example .env
+# edit .env: set DB_PASSWORD, JWT_SECRET (openssl rand -base64 64), and CORS_ALLOWED_ORIGINS
+# to your real frontend domain
+docker compose up --build
+```
+
+- Frontend: `http://localhost` (or `${FRONTEND_PORT}` if you changed it)
+- Backend API: `http://localhost:8080/api` (also reachable through the frontend's nginx at `/api/`, which
+  is what the built Angular app actually calls — see `frontend/nginx.conf`)
+- Flyway applies all migrations automatically on the backend's first startup, same as local dev
+
+**What each piece does:**
+- `backend/Dockerfile` — multi-stage build: `maven:3.9-eclipse-temurin-21` compiles the jar, then a slim
+  `eclipse-temurin:21-jre-alpine` runs it as a non-root user
+- `frontend/Dockerfile` — multi-stage build: `node:20-alpine` builds the production Angular bundle, then
+  `nginx:1.27-alpine` serves it and proxies `/api/*` through to the `backend` container
+- `docker-compose.yml` — wires the three containers together; every secret (`DB_PASSWORD`, `JWT_SECRET`,
+  `CORS_ALLOWED_ORIGINS`) is required via `${VAR:?error message}` syntax — compose refuses to start rather
+  than silently falling back to an insecure default
+
+**Prerequisites:** Docker and Docker Compose v2. No local Java/Node/Maven/npm installation needed for this
+path — everything builds inside the containers.
+
+**Backup / restore:** the Postgres data lives in the `billing_saas_pgdata` named volume. Back it up with
+`docker exec billing-saas-postgres pg_dump -U <DB_USERNAME> <DB_NAME> > backup.sql` and restore with
+`docker exec -i billing-saas-postgres psql -U <DB_USERNAME> <DB_NAME> < backup.sql`.
+
+**Troubleshooting:**
+- Backend won't start / exits immediately → check `docker compose logs backend`; almost always a missing or
+  invalid `JWT_SECRET`/`DB_PASSWORD` in `.env`
+- Frontend loads but API calls fail → confirm `CORS_ALLOWED_ORIGINS` in `.env` matches the exact origin
+  you're loading the frontend from (scheme + host + port)
+- Changes to backend/frontend code not showing up → `docker compose up --build` rebuilds; a plain
+  `docker compose up` reuses cached images
+
 ## What's implemented
 
 ### Phase 1 — Foundation
@@ -253,6 +294,23 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
       invoice-settings forms, and a My Profile page (name/phone + change password) linked from the top bar
 - [x] Tests: last-owner-cannot-be-disabled, admin-cannot-create-or-edit-an-owner, owner-can-create-an-admin
 
+### Phase 7 — Global search, SaaS plan limits, deployment docs
+- [x] Global search (spec section 22): a single top-bar search box fans out to the existing tenant-scoped
+      search queries in Customers/Products/Services/Invoices and shows the top few hits from each in a
+      dropdown — reuses each module's existing paginated query rather than standing up a separate
+      full-text index
+- [x] SaaS plan limits foundation (spec section 37): a `PlanLimits` record per plan tier
+      (FREE/BASIC/PROFESSIONAL/BUSINESS, `-1` = unlimited) checked at the point of creating a user
+      (`UserManagementService`), creating a customer (`CustomerService`), and issuing an invoice
+      (`InvoiceService#issue`, checked against the current calendar month's count) — each rejected with a
+      clear "upgrade your plan" message rather than a generic error
+- [x] Full deployment documentation + Docker Compose (spec section 40): `backend/Dockerfile` (multi-stage
+      Maven → slim JRE, runs as non-root), `frontend/Dockerfile` (multi-stage Angular build → nginx,
+      proxying `/api/*` to the backend container), and a root `docker-compose.yml` wiring Postgres + backend
+      + frontend together, with every secret required via `${VAR:?error}` syntax so compose refuses to start
+      on a missing `JWT_SECRET`/`DB_PASSWORD` rather than falling back to an insecure default
+- [x] Backup/restore instructions and a troubleshooting section added to the README's deployment guide
+
 ## Known limitations (by design, for this phase)
 
 - No email sending yet — password reset tokens are logged server-side only (`AuthService.forgotPassword`);
@@ -262,8 +320,6 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
   natural next addition once email sending exists.
 - Tokens are stored in `localStorage` on the frontend for simplicity. Consider httpOnly cookies for a
   production hardening pass (noted in `auth.service.ts`).
-- No Docker Compose for the app itself yet (only for optional local Postgres) — added when deployment
-  documentation (spec section 40) is tackled.
 - Invoice-level `additionalDiscountAmount` is applied **after** tax (a flat rebate off the grand total),
   not proportionally distributed across line items before tax. This is a deliberate MVP simplification —
   proportional pre-tax discount allocation across mixed-tax-rate line items adds real complexity for
@@ -282,15 +338,20 @@ Flyway migrations use Postgres-only features (`pgcrypto`, `jsonb`).
   `ReportController` but weren't all built out to keep that phase's scope contained
 - Logo upload is a plain URL field (`logoUrl`), not a file upload — a real image upload (to S3-compatible
   storage or similar) is a future addition once file storage is wired up
+- `PlanLimits` are static per-plan constants, not yet tied to an actual subscription/billing record —
+  `businesses.plan` is hand-set (defaults to `FREE`); wiring it to a real subscription is spec section 38
+- Global search only covers Customers/Products/Services/Invoices, not Payments/Expenses — a straightforward
+  addition to `SearchService` following the same pattern
 - Backend was not compiled in this environment (no Maven/Maven-Central network access here) — run
-  `mvn clean install` locally to verify before deploying.
+  `mvn clean install` locally to verify before deploying. The Dockerfiles were similarly written but not
+  build-tested here for the same reason (no Docker daemon / registry access in this sandbox) — build and
+  run `docker compose up --build` locally to verify before relying on it.
 
 ## Next recommended phase
 
-**Phase 7: Search polish + SaaS plan limits + deployment docs** — global search across
-customers/products/services/invoices (spec section 22, currently each module has its own search but there's
-no unified search bar), the plan/limits foundation from spec section 37 (Free/Basic/Professional/Business
-tiers with configurable limits on users/customers/invoices), and the deployment documentation + Docker
-Compose for the full app (spec section 40) that every phase so far has deferred. A scheduled job to sweep
-overdue invoices (`InvoiceRepository#findOverdueCandidates`, still unused) fits naturally alongside this
-phase too.
+**Phase 8: Subscription billing + notifications** — wiring `businesses.plan` to a real subscription (spec
+section 38: Razorpay/Stripe integration, automatic recurring billing), email delivery (unblocks account
+activation, password reset, and invoice emailing — spec section 38's "Email invoices"), and a scheduled job
+to sweep overdue invoices (`InvoiceRepository#findOverdueCandidates`, still unused). WhatsApp/SMS invoice
+sharing and payment reminders (spec section 38) are natural follow-ons once email delivery exists as the
+first channel.

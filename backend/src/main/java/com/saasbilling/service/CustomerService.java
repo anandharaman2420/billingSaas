@@ -4,8 +4,11 @@ import com.saasbilling.dto.common.PageResponse;
 import com.saasbilling.dto.customer.CustomerRequest;
 import com.saasbilling.dto.customer.CustomerResponse;
 import com.saasbilling.entity.ActiveStatus;
+import com.saasbilling.entity.Business;
 import com.saasbilling.entity.Customer;
+import com.saasbilling.exception.ForbiddenOperationException;
 import com.saasbilling.exception.ResourceNotFoundException;
+import com.saasbilling.repository.BusinessRepository;
 import com.saasbilling.repository.CustomerRepository;
 import com.saasbilling.security.TenantContext;
 import org.springframework.data.domain.Page;
@@ -19,16 +22,27 @@ import java.util.UUID;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final BusinessRepository businessRepository;
     private final AuditLogService auditLogService;
 
-    public CustomerService(CustomerRepository customerRepository, AuditLogService auditLogService) {
+    public CustomerService(CustomerRepository customerRepository, BusinessRepository businessRepository,
+                            AuditLogService auditLogService) {
         this.customerRepository = customerRepository;
+        this.businessRepository = businessRepository;
         this.auditLogService = auditLogService;
     }
 
     @Transactional
     public CustomerResponse create(CustomerRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
+
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
+        long activeCustomers = customerRepository.countByBusinessIdAndStatus(businessId, ActiveStatus.ACTIVE);
+        if (!PlanLimits.forPlan(business.getPlan()).isWithinCustomerLimit(activeCustomers)) {
+            throw new ForbiddenOperationException(
+                    "This business's " + business.getPlan() + " plan allows a limited number of customers. Upgrade your plan to add more.");
+        }
 
         Customer customer = new Customer();
         customer.setBusinessId(businessId);

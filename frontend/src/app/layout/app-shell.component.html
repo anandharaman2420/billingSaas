@@ -17,11 +17,14 @@
   </aside>
 
   <div style="flex: 1; display: flex; flex-direction: column;">
-    <header style="display: flex; justify-content: flex-end; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
+      <app-global-search></app-global-search>
+      <div style="display: flex; align-items: center;">
       <span style="margin-right: 16px; color: var(--color-text-muted);">
         <a routerLink="/profile" style="color: inherit;">{{ authService.currentUser()?.fullName }} · {{ authService.currentUser()?.role }}</a>
       </span>
       <button (click)="logout()">Log out</button>
+      </div>
     </header>
 
     <main style="flex: 1; overflow-y: auto;">

@@ -35,4 +35,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     org.springframework.data.domain.Page<User> findByBusinessId(UUID businessId, org.springframework.data.domain.Pageable pageable);
 
     long countByBusinessIdAndRoleAndStatus(UUID businessId, com.saasbilling.entity.UserRole role, com.saasbilling.entity.UserStatus status);
+
+    long countByBusinessIdAndStatus(UUID businessId, com.saasbilling.entity.UserStatus status);
 }

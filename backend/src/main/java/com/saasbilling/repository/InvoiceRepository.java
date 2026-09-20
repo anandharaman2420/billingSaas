@@ -91,6 +91,17 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
             """)
     long countIssuedInvoices(@Param("businessId") UUID businessId);
 
+    @Query("""
+            select count(i) from Invoice i
+            where i.businessId = :businessId
+              and i.status <> com.saasbilling.entity.InvoiceStatus.DRAFT
+              and i.status <> com.saasbilling.entity.InvoiceStatus.CANCELLED
+              and i.invoiceDate >= :fromDate and i.invoiceDate <= :toDate
+            """)
+    long countIssuedInvoicesInRange(@Param("businessId") UUID businessId,
+                                     @Param("fromDate") LocalDate fromDate,
+                                     @Param("toDate") LocalDate toDate);
+
     // --- Report aggregates ---
 
     interface DailySalesRow {

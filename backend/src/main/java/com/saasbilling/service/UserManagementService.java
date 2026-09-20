@@ -74,6 +74,12 @@ public class UserManagementService {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
 
+        long activeUsers = userRepository.countByBusinessIdAndStatus(businessId, UserStatus.ACTIVE);
+        if (!com.saasbilling.service.PlanLimits.forPlan(business.getPlan()).isWithinUserLimit(activeUsers)) {
+            throw new ForbiddenOperationException(
+                    "This business's " + business.getPlan() + " plan allows a limited number of users. Upgrade your plan to add more team members.");
+        }
+
         User user = new User();
         user.setBusiness(business);
         user.setFullName(request.fullName());

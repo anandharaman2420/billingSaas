@@ -130,6 +130,8 @@ public class InvoiceService {
             throw new ForbiddenOperationException("Cannot issue an invoice with no items");
         }
 
+        assertWithinMonthlyInvoiceLimit(businessId);
+
         invoice.setInvoiceNumber(generateNextInvoiceNumber(businessId));
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoice = invoiceRepository.save(invoice);
@@ -363,6 +365,21 @@ public class InvoiceService {
             return false;
         }
         return business.getState().trim().equalsIgnoreCase(customer.getState().trim());
+    }
+
+    /** Spec section 37: plan limits are checked at issue time, since a DRAFT hasn't consumed anything yet. */
+    private void assertWithinMonthlyInvoiceLimit(UUID businessId) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
+
+        LocalDate monthStart = LocalDate.now().withDayOfMonth(1);
+        LocalDate monthEnd = monthStart.plusMonths(1).minusDays(1);
+        long issuedThisMonth = invoiceRepository.countIssuedInvoicesInRange(businessId, monthStart, monthEnd);
+
+        if (!PlanLimits.forPlan(business.getPlan()).isWithinMonthlyInvoiceLimit(issuedThisMonth)) {
+            throw new ForbiddenOperationException(
+                    "This business's " + business.getPlan() + " plan allows a limited number of invoices per month. Upgrade your plan to issue more.");
+        }
     }
 
     private void applyMutableFields(Invoice invoice, InvoiceRequest request, UUID businessId) {
