@@ -13,6 +13,22 @@ spring:
       maximum-pool-size: ${DB_POOL_SIZE:10}
       minimum-idle: 2
 
+  # Optional - EmailService (see notification/EmailService.java) logs and
+  # continues instead of throwing when this isn't configured, so the app
+  # runs fine in dev without a real SMTP provider. Set these to enable
+  # real password-reset/invoice/reminder emails.
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   jpa:
     hibernate:
       ddl-auto: validate   # schema is owned by Flyway migrations, never by Hibernate
@@ -53,6 +69,15 @@ app:
 
   security:
     bcrypt-strength: 12
+
+  mail:
+    from-address: ${MAIL_FROM_ADDRESS:no-reply@billingsaas.local}
+    from-name: ${MAIL_FROM_NAME:Billing SaaS}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:4200}
+
+  scheduled:
+    overdue-sweep-cron: ${OVERDUE_SWEEP_CRON:0 0 1 * * *}       # 1 AM daily
+    payment-reminder-cron: ${PAYMENT_REMINDER_CRON:0 0 8 * * *} # 8 AM daily
 
 springdoc:
   swagger-ui:

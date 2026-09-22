@@ -37,10 +37,12 @@ public class AuthService {
     private final UserRepository userRepository;
     private final BusinessSettingsRepository businessSettingsRepository;
     private final CategoryRepository categoryRepository;
+    private final com.saasbilling.repository.SubscriptionRepository subscriptionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditLogService auditLogService;
+    private final com.saasbilling.notification.EmailService emailService;
 
     private static final java.util.List<String> DEFAULT_EXPENSE_CATEGORIES = java.util.List.of(
             "Rent", "Electricity", "Internet", "Salary", "Purchase", "Transport", "Maintenance", "Other");
@@ -49,18 +51,22 @@ public class AuthService {
                         UserRepository userRepository,
                         BusinessSettingsRepository businessSettingsRepository,
                         CategoryRepository categoryRepository,
+                        com.saasbilling.repository.SubscriptionRepository subscriptionRepository,
                         RefreshTokenRepository refreshTokenRepository,
                         PasswordEncoder passwordEncoder,
                         JwtService jwtService,
-                        AuditLogService auditLogService) {
+                        AuditLogService auditLogService,
+                        com.saasbilling.notification.EmailService emailService) {
         this.businessRepository = businessRepository;
         this.userRepository = userRepository;
         this.businessSettingsRepository = businessSettingsRepository;
         this.categoryRepository = categoryRepository;
+        this.subscriptionRepository = subscriptionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.auditLogService = auditLogService;
+        this.emailService = emailService;
     }
 
     // -----------------------------------------------------------------
@@ -107,6 +113,13 @@ public class AuthService {
         businessSettingsRepository.save(settings);
 
         seedDefaultExpenseCategories(business.getId());
+
+        com.saasbilling.entity.Subscription subscription = new com.saasbilling.entity.Subscription();
+        subscription.setBusinessId(business.getId());
+        subscription.setPlan(business.getPlan());
+        subscriptionRepository.save(subscription);
+
+        emailService.sendWelcomeEmail(owner.getEmail(), owner.getFullName(), business.getBusinessName());
 
         auditLogService.record(business.getId(), owner.getId(), "BUSINESS_REGISTERED", "BUSINESS", business.getId(), null, null);
 
@@ -212,7 +225,7 @@ public class AuthService {
             user.setPasswordResetToken(sha256(token));
             user.setPasswordResetExpiresAt(OffsetDateTime.now().plusMinutes(PASSWORD_RESET_VALIDITY_MINUTES));
             userRepository.save(user);
-            // TODO (next phase): send the raw `token` via email. Never log or return it directly.
+            emailService.sendPasswordResetEmail(user.getEmail(), token);
             log.info("Password reset requested for user {}", user.getId());
         });
         // Always respond the same way whether or not the email exists, to avoid user enumeration.

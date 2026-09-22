@@ -46,3 +46,12 @@ export interface BusinessSettings {
 }
 
 export type BusinessSettingsRequest = BusinessSettings;
+
+export interface Subscription {
+  id: string;
+  plan: string;
+  status: string;
+  provider: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+}

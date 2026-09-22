@@ -311,13 +311,30 @@ path — everything builds inside the containers.
       on a missing `JWT_SECRET`/`DB_PASSWORD` rather than falling back to an insecure default
 - [x] Backup/restore instructions and a troubleshooting section added to the README's deployment guide
 
+### Phase 8 — Email, subscription foundation, scheduled jobs
+- [x] Real email delivery (`EmailService`, `spring-boot-starter-mail`): password reset, welcome emails
+      (business registration and new team members), and "email this invoice to the customer" — all
+      gracefully no-op with a log line instead of throwing when `SMTP_HOST` isn't configured, so the app
+      keeps working in dev without real SMTP credentials
+- [x] `POST /api/invoices/{id}/email` (spec section 38's "Email invoices") — generates the PDF and emails
+      it to the customer's address on file; rejects DRAFT invoices and customers with no email set
+- [x] Subscription foundation (spec section 38): a `subscriptions` table (migration `V8`) separate from
+      `businesses.plan` (which stays as the fast-read copy `PlanLimits` and the rest of the app check).
+      `SubscriptionService` supports `MANUAL` plan changes only — no payment is actually collected, but the
+      seam where a real Razorpay/Stripe webhook handler plugs in is documented directly in the service
+- [x] `OverdueInvoiceSweepJob` — the scheduled job `InvoiceRepository#findOverdueCandidates` has been ready
+      for since Phase 3 finally exists: runs daily, flips `ISSUED`/`PARTIALLY_PAID` invoices past due to
+      `OVERDUE` across every active business, operating directly on repositories rather than through the
+      tenant-scoped service layer (which assumes one request's `TenantContext` — a scheduled job spans
+      every tenant)
+- [x] `PaymentReminderJob` (spec section 38's "Payment reminders") — daily job emailing customers a
+      due-soon nudge 2 days before an invoice's due date, and a reminder every day it's `OVERDUE`
+- [x] Angular: "Email to customer" button on the invoice detail page; a Billing plan card on Settings
+      (OWNER-only plan switcher, clearly labeled as not collecting payment yet)
+- [x] Docker Compose and `.env.example` updated with the new SMTP/mail environment variables
+
 ## Known limitations (by design, for this phase)
 
-- No email sending yet — password reset tokens are logged server-side only (`AuthService.forgotPassword`);
-  wire up an email provider before relying on this in production. New team members created via
-  `POST /api/users` are activated immediately with an OWNER/ADMIN-chosen password, same MVP simplification
-  as business registration — a real email-invite flow (spec section 6's implied invitation flow) is a
-  natural next addition once email sending exists.
 - Tokens are stored in `localStorage` on the frontend for simplicity. Consider httpOnly cookies for a
   production hardening pass (noted in `auth.service.ts`).
 - Invoice-level `additionalDiscountAmount` is applied **after** tax (a flat rebate off the grand total),
@@ -325,8 +342,6 @@ path — everything builds inside the containers.
   proportional pre-tax discount allocation across mixed-tax-rate line items adds real complexity for
   limited benefit at this stage; documented in `InvoiceService` and the DB migration comments so a future
   phase can revisit it if a customer needs GST-compliant discount treatment
-- No scheduled job yet to automatically flip `ISSUED`/`PARTIALLY_PAID` invoices to `OVERDUE` after their
-  due date passes — `InvoiceRepository#findOverdueCandidates` is ready for a future `@Scheduled` task to use
 - No dedicated `/payments` list page yet — payment history is viewable per-invoice on the invoice detail
   page; a global searchable/filterable payments list (`PaymentController#search` already supports it) is a
   small addition for a future phase
@@ -338,20 +353,27 @@ path — everything builds inside the containers.
   `ReportController` but weren't all built out to keep that phase's scope contained
 - Logo upload is a plain URL field (`logoUrl`), not a file upload — a real image upload (to S3-compatible
   storage or similar) is a future addition once file storage is wired up
-- `PlanLimits` are static per-plan constants, not yet tied to an actual subscription/billing record —
-  `businesses.plan` is hand-set (defaults to `FREE`); wiring it to a real subscription is spec section 38
+- `PlanLimits` are still static per-plan constants — a real payment gateway (Razorpay/Stripe) isn't
+  integrated, so `SubscriptionService.changePlan` doesn't collect payment; it's a manual/admin plan switch
+  only. Real gateway integration (checkout, webhooks that call an `applyProviderPlanChange`-style method)
+  is the natural next step and was scoped out to keep this phase's deliverable buildable and testable
+  without external API keys this sandbox doesn't have
+- `PaymentReminderJob` has no throttling — an `OVERDUE` invoice gets a reminder email every single day the
+  job runs, not just once. A `last_reminder_sent_at` column would fix this in a future pass
 - Global search only covers Customers/Products/Services/Invoices, not Payments/Expenses — a straightforward
   addition to `SearchService` following the same pattern
 - Backend was not compiled in this environment (no Maven/Maven-Central network access here) — run
   `mvn clean install` locally to verify before deploying. The Dockerfiles were similarly written but not
   build-tested here for the same reason (no Docker daemon / registry access in this sandbox) — build and
-  run `docker compose up --build` locally to verify before relying on it.
+  run `docker compose up --build` locally to verify before relying on it. Real SMTP delivery and the
+  scheduled jobs' cron timing were not exercised end-to-end here either — verify locally with real SMTP
+  credentials and/or a shortened cron expression before relying on them in production.
 
 ## Next recommended phase
 
-**Phase 8: Subscription billing + notifications** — wiring `businesses.plan` to a real subscription (spec
-section 38: Razorpay/Stripe integration, automatic recurring billing), email delivery (unblocks account
-activation, password reset, and invoice emailing — spec section 38's "Email invoices"), and a scheduled job
-to sweep overdue invoices (`InvoiceRepository#findOverdueCandidates`, still unused). WhatsApp/SMS invoice
-sharing and payment reminders (spec section 38) are natural follow-ons once email delivery exists as the
-first channel.
+**Phase 9: Real payment gateway integration + advanced GST + file uploads** — the pieces Phase 8 explicitly
+deferred: wiring Razorpay/Stripe checkout and webhooks into `SubscriptionService` so plan changes actually
+collect payment, advanced GST features (spec section 38 — e-invoicing, HSN/SAC codes), and real file upload
+for business logos and expense attachments (currently both are plain URL fields) via S3-compatible object
+storage. A `last_reminder_sent_at` column to throttle `PaymentReminderJob` fits naturally alongside this
+phase too.

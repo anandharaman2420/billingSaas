@@ -55,6 +55,16 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
             """)
     java.util.List<Invoice> findOverdueCandidates(@Param("businessId") UUID businessId, @Param("asOf") LocalDate asOf);
 
+    List<Invoice> findByBusinessIdAndStatus(UUID businessId, InvoiceStatus status);
+
+    @Query("""
+            select i from Invoice i
+            where i.businessId = :businessId
+              and i.status in (com.saasbilling.entity.InvoiceStatus.ISSUED, com.saasbilling.entity.InvoiceStatus.PARTIALLY_PAID)
+              and i.dueDate = :dueDate
+            """)
+    List<Invoice> findDueOnDate(@Param("businessId") UUID businessId, @Param("dueDate") LocalDate dueDate);
+
     // --- Dashboard aggregates (spec section 7) ---
 
     @Query("""

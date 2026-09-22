@@ -86,6 +86,12 @@ public class InvoiceController {
         return invoiceService.update(id, request);
     }
 
+    @PostMapping("/{id}/email")
+    public ResponseEntity<Void> emailInvoice(@PathVariable UUID id) {
+        invoiceService.emailInvoice(id);
+        return ResponseEntity.accepted().build();
+    }
+
     @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER')")
     @PostMapping("/{id}/issue")
     public InvoiceResponse issue(@PathVariable UUID id) {

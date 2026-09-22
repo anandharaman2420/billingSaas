@@ -125,4 +125,30 @@
       </button>
     </form>
   </div>
+
+  <div class="card" style="margin-top: 24px;" *ngIf="subscription() as sub">
+    <h2 style="margin-top: 0;">Billing plan</h2>
+    <p>
+      Current plan: <strong>{{ sub.plan }}</strong>
+      <span style="color: var(--color-text-muted);"> · {{ sub.status }}</span>
+    </p>
+    <p style="color: var(--color-text-muted); font-size: 0.85rem;">
+      Changing your plan here doesn't collect any payment yet — this is a manual switch while
+      subscription billing (Razorpay/Stripe) is still being built. Your plan controls limits on team
+      members, customers, and invoices per month.
+    </p>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button
+        *ngFor="let p of plans"
+        [class.btn-primary]="p === sub.plan"
+        [disabled]="planChanging() || p === sub.plan || !authService.hasRole('OWNER')"
+        (click)="changePlan(p)"
+      >
+        {{ p }}
+      </button>
+    </div>
+    <p *ngIf="!authService.hasRole('OWNER')" style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 8px;">
+      Only the business owner can change the plan.
+    </p>
+  </div>
 </div>

@@ -165,6 +165,22 @@ export class InvoiceDetailComponent implements OnInit {
     });
   }
 
+  emailInvoice(): void {
+    const invoice = this.invoice();
+    if (!invoice) return;
+    this.actionInProgress.set(true);
+    this.invoiceApi.emailInvoice(invoice.id).subscribe({
+      next: () => {
+        this.actionInProgress.set(false);
+        alert('Invoice emailed to the customer.');
+      },
+      error: (err) => {
+        this.actionInProgress.set(false);
+        alert(err.error?.message ?? 'Failed to email invoice.');
+      },
+    });
+  }
+
   statusColor(status: string): string {
     switch (status) {
       case 'PAID':

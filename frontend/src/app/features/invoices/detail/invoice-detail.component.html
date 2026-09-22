@@ -6,6 +6,7 @@
     </div>
     <div style="display: flex; gap: 8px;">
       <button (click)="downloadPdf()">Download PDF</button>
+      <button *ngIf="inv.status !== 'DRAFT'" [disabled]="actionInProgress()" (click)="emailInvoice()">Email to customer</button>
       <button *ngIf="inv.status === 'DRAFT'" (click)="edit()">Edit</button>
       <button *ngIf="inv.status === 'DRAFT' && canManage()" class="btn-primary" [disabled]="actionInProgress()" (click)="issue()">
         Issue invoice

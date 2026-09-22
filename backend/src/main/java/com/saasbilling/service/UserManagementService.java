@@ -40,15 +40,18 @@ public class UserManagementService {
     private final BusinessRepository businessRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+    private final com.saasbilling.notification.EmailService emailService;
 
     public UserManagementService(UserRepository userRepository,
                                   BusinessRepository businessRepository,
                                   PasswordEncoder passwordEncoder,
-                                  AuditLogService auditLogService) {
+                                  AuditLogService auditLogService,
+                                  com.saasbilling.notification.EmailService emailService) {
         this.userRepository = userRepository;
         this.businessRepository = businessRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditLogService = auditLogService;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -91,6 +94,8 @@ public class UserManagementService {
         // (AuthService) - swap for PENDING_ACTIVATION + email invite later.
         user.setStatus(UserStatus.ACTIVE);
         user = userRepository.save(user);
+
+        emailService.sendWelcomeEmail(user.getEmail(), user.getFullName(), business.getBusinessName());
 
         auditLogService.record(businessId, TenantContext.currentUserId(), "USER_CREATED", "USER", user.getId(), null, null);
 

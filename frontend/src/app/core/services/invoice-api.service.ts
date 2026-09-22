@@ -43,6 +43,10 @@ export class InvoiceApiService {
     return this.http.post<Invoice>(`${this.baseUrl}/${id}/cancel`, { reason });
   }
 
+  emailInvoice(id: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/${id}/email`, {});
+  }
+
   /** Opens the PDF in a new tab. The browser sends the stored JWT via the auth interceptor. */
   pdfUrl(id: string): string {
     return `${this.baseUrl}/${id}/pdf`;

@@ -41,6 +41,8 @@ public class InvoiceService {
     private final BusinessSettingsRepository businessSettingsRepository;
     private final BusinessRepository businessRepository;
     private final AuditLogService auditLogService;
+    private final com.saasbilling.pdf.InvoicePdfService invoicePdfService;
+    private final com.saasbilling.notification.EmailService emailService;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
                            CustomerRepository customerRepository,
@@ -48,7 +50,9 @@ public class InvoiceService {
                            BillableServiceRepository serviceRepository,
                            BusinessSettingsRepository businessSettingsRepository,
                            BusinessRepository businessRepository,
-                           AuditLogService auditLogService) {
+                           AuditLogService auditLogService,
+                           com.saasbilling.pdf.InvoicePdfService invoicePdfService,
+                           com.saasbilling.notification.EmailService emailService) {
         this.invoiceRepository = invoiceRepository;
         this.customerRepository = customerRepository;
         this.productRepository = productRepository;
@@ -56,6 +60,8 @@ public class InvoiceService {
         this.businessSettingsRepository = businessSettingsRepository;
         this.businessRepository = businessRepository;
         this.auditLogService = auditLogService;
+        this.invoicePdfService = invoicePdfService;
+        this.emailService = emailService;
     }
 
     // -----------------------------------------------------------------
@@ -169,6 +175,32 @@ public class InvoiceService {
                 "INVOICE", invoice.getId(), null, request.reason());
 
         return InvoiceResponse.from(invoice);
+    }
+
+    /** Spec section 38: "Email invoices" - generates the PDF and emails it to the customer on file. */
+    @Transactional(readOnly = true)
+    public void emailInvoice(UUID id) {
+        UUID businessId = TenantContext.currentBusinessId();
+        Invoice invoice = getOwnedWithItemsOrThrow(id, businessId);
+
+        if (invoice.getStatus() == InvoiceStatus.DRAFT) {
+            throw new ForbiddenOperationException("Issue the invoice before emailing it to the customer");
+        }
+
+        Customer customer = customerRepository.findByIdAndBusinessId(invoice.getCustomerId(), businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+
+        if (customer.getEmail() == null || customer.getEmail().isBlank()) {
+            throw new IllegalArgumentException("This customer has no email address on file");
+        }
+
+        byte[] pdf = invoicePdfService.generate(invoice);
+        emailService.sendInvoiceEmail(customer.getEmail(), customer.getCustomerName(),
+                invoice.getInvoiceNumber() != null ? invoice.getInvoiceNumber() : "DRAFT",
+                invoice.getGrandTotal(), pdf);
+
+        auditLogService.record(businessId, TenantContext.currentUserId(), "INVOICE_EMAILED",
+                "INVOICE", invoice.getId(), null, null);
     }
 
     // -----------------------------------------------------------------

@@ -3,6 +3,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BusinessApiService } from '../../core/services/business-api.service';
+import { SubscriptionApiService } from '../../core/services/subscription-api.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { Subscription } from '../../core/models/business.model';
 import { ApiError } from '../../core/models/auth.model';
 
 @Component({
@@ -19,6 +22,10 @@ export class SettingsComponent implements OnInit {
   readonly settingsLoading = signal(false);
   readonly settingsSaved = signal(false);
   readonly settingsError = signal<string | null>(null);
+
+  readonly subscription = signal<Subscription | null>(null);
+  readonly plans = ['FREE', 'BASIC', 'PROFESSIONAL', 'BUSINESS'];
+  readonly planChanging = signal(false);
 
   readonly profileForm = this.fb.group({
     businessName: ['', Validators.required],
@@ -51,11 +58,26 @@ export class SettingsComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private businessApi: BusinessApiService,
+    private subscriptionApi: SubscriptionApiService,
+    readonly authService: AuthService,
   ) {}
 
   ngOnInit(): void {
     this.businessApi.getProfile().subscribe((profile) => this.profileForm.patchValue(profile as any));
     this.businessApi.getSettings().subscribe((settings) => this.settingsForm.patchValue(settings as any));
+    this.subscriptionApi.get().subscribe((sub) => this.subscription.set(sub));
+  }
+
+  changePlan(plan: string): void {
+    if (!this.authService.hasRole('OWNER')) return;
+    this.planChanging.set(true);
+    this.subscriptionApi.changePlan(plan).subscribe({
+      next: (sub) => {
+        this.subscription.set(sub);
+        this.planChanging.set(false);
+      },
+      error: () => this.planChanging.set(false),
+    });
   }
 
   saveProfile(): void {
