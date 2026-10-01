@@ -50,6 +50,11 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 server:
   port: ${SERVER_PORT:8080}
   error:
@@ -78,6 +83,21 @@ app:
   scheduled:
     overdue-sweep-cron: ${OVERDUE_SWEEP_CRON:0 0 1 * * *}       # 1 AM daily
     payment-reminder-cron: ${PAYMENT_REMINDER_CRON:0 0 8 * * *} # 8 AM daily
+
+  storage:
+    # See com.saasbilling.storage.FileStorageService - local disk by default;
+    # swap in an S3-compatible implementation for multi-instance production
+    # (local disk doesn't survive a redeploy or scale past one instance).
+    local-directory: ${UPLOAD_STORAGE_DIRECTORY:./uploads}
+    public-base-url: ${UPLOAD_PUBLIC_BASE_URL:/api/files}
+
+  razorpay:
+    # Optional. Blank = plan changes stay on the MANUAL provider (no
+    # payment collected); set key-id/key-secret to enable Razorpay checkout,
+    # and webhook-secret so /api/webhooks/razorpay accepts real events.
+    key-id: ${RAZORPAY_KEY_ID:}
+    key-secret: ${RAZORPAY_KEY_SECRET:}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
 
 springdoc:
   swagger-ui:

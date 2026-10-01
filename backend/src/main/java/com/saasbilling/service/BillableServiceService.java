@@ -97,6 +97,7 @@ public class BillableServiceService {
     private void applyRequest(BillableService service, ServiceRequest request) {
         service.setServiceName(request.serviceName());
         service.setDescription(request.description());
+        service.setSacCode((request.sacCode() == null || request.sacCode().isBlank()) ? null : request.sacCode());
         service.setPrice(request.price());
         service.setTaxRatePercent(request.taxRatePercent());
         service.setCategoryId(request.categoryId());

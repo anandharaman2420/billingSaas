@@ -67,6 +67,12 @@ public class ExpenseController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping(value = "/{id}/attachment", consumes = "multipart/form-data")
+    public ExpenseResponse uploadAttachment(@PathVariable UUID id,
+                                             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return expenseService.uploadAttachment(id, file);
+    }
+
     private Pageable buildPageable(int page, int size, String sortBy, String sortDir) {
         int safeSize = Math.min(Math.max(size, 1), 100);
         Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC, sortBy);

@@ -356,6 +356,7 @@ public class InvoiceService {
             item.setItemType(InvoiceItemType.PRODUCT);
             item.setProductId(product.getId());
             item.setItemName(product.getProductName());
+            item.setHsnSacCode(product.getHsnCode());
             unitPrice = product.getSellingPrice();
             taxRate = product.getTaxRatePercent();
         } else {
@@ -367,6 +368,7 @@ public class InvoiceService {
             item.setItemType(InvoiceItemType.SERVICE);
             item.setServiceId(service.getId());
             item.setItemName(service.getServiceName());
+            item.setHsnSacCode(service.getSacCode());
             unitPrice = service.getPrice();
             taxRate = service.getTaxRatePercent();
         }

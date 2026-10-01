@@ -16,6 +16,10 @@ public class SubscriptionDtos {
     ) {
     }
 
+    /** What the frontend needs to open Razorpay Checkout for an order. */
+    public record CheckoutResponse(String orderId, long amountPaise, String currency, String keyId, String plan) {
+    }
+
     public record SubscriptionResponse(
             UUID id, String plan, String status, String provider,
             LocalDate currentPeriodStart, LocalDate currentPeriodEnd

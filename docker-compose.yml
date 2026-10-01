@@ -55,6 +55,13 @@ services:
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@billingsaas.local}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Billing SaaS}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost}
+      UPLOAD_STORAGE_DIRECTORY: /app/uploads
+      UPLOAD_PUBLIC_BASE_URL: ${UPLOAD_PUBLIC_BASE_URL:-/api/files}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+    volumes:
+      - billing_saas_uploads:/app/uploads
     ports:
       - '8080:8080'
 
@@ -70,3 +77,4 @@ services:
 
 volumes:
   billing_saas_pgdata:
+  billing_saas_uploads:

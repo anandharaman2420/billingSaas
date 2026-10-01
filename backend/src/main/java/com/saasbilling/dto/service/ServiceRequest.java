@@ -13,6 +13,9 @@ public record ServiceRequest(
 
         String description,
 
+        @Size(max = 20)
+        String sacCode,
+
         @NotNull(message = "Price is required")
         @DecimalMin(value = "0.0", message = "Price cannot be negative")
         BigDecimal price,

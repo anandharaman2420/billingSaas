@@ -28,6 +28,9 @@ public class BillableService extends BaseEntity {
     @Column(columnDefinition = "text")
     private String description;
 
+    @Column(name = "sac_code", length = 20)
+    private String sacCode;
+
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal price = BigDecimal.ZERO;
 

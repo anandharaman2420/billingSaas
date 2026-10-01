@@ -152,13 +152,13 @@ public class InvoicePdfService {
     }
 
     private void addItemsTable(Document document, Invoice invoice) throws DocumentException {
-        PdfPTable table = new PdfPTable(new float[]{3.2f, 1f, 1.3f, 1.1f, 1f, 1.3f});
+        PdfPTable table = new PdfPTable(new float[]{2.6f, 1f, 1f, 1.3f, 1.1f, 1f, 1.3f});
         table.setWidthPercentage(100);
         table.setSpacingBefore(4);
         table.setSpacingAfter(12);
 
         Font headerFont = new Font(Font.HELVETICA, 9, Font.BOLD, Color.WHITE);
-        String[] headers = {"Item", "Qty", "Unit Price", "Discount", "Tax %", "Amount"};
+        String[] headers = {"Item", "HSN/SAC", "Qty", "Unit Price", "Discount", "Tax %", "Amount"};
         for (String h : headers) {
             PdfPCell cell = new PdfPCell(new Phrase(h, headerFont));
             cell.setBackgroundColor(BRAND_COLOR);
@@ -174,6 +174,7 @@ public class InvoicePdfService {
             alternate = !alternate;
 
             addBodyCell(table, item.getItemName(), cellFont, bg, Element.ALIGN_LEFT);
+            addBodyCell(table, item.getHsnSacCode() == null ? "-" : item.getHsnSacCode(), cellFont, bg, Element.ALIGN_RIGHT);
             addBodyCell(table, formatQty(item.getQuantity()), cellFont, bg, Element.ALIGN_RIGHT);
             addBodyCell(table, formatMoney(item.getUnitPrice()), cellFont, bg, Element.ALIGN_RIGHT);
             addBodyCell(table, formatMoney(item.getDiscountAmount()), cellFont, bg, Element.ALIGN_RIGHT);

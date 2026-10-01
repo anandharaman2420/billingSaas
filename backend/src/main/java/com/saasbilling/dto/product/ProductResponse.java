@@ -10,6 +10,7 @@ public record ProductResponse(
         UUID id,
         String productName,
         String sku,
+        String hsnCode,
         UUID categoryId,
         String description,
         String unit,
@@ -25,7 +26,7 @@ public record ProductResponse(
 ) {
     public static ProductResponse from(Product p) {
         return new ProductResponse(
-                p.getId(), p.getProductName(), p.getSku(), p.getCategoryId(), p.getDescription(),
+                p.getId(), p.getProductName(), p.getSku(), p.getHsnCode(), p.getCategoryId(), p.getDescription(),
                 p.getUnit(), p.getPurchasePrice(), p.getSellingPrice(), p.getTaxRatePercent(),
                 p.getStockQuantity(), p.getMinimumStockLevel(),
                 p.getStockQuantity().compareTo(p.getMinimumStockLevel()) <= 0,

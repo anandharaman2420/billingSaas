@@ -7,10 +7,12 @@ import com.saasbilling.entity.Expense;
 import com.saasbilling.exception.ResourceNotFoundException;
 import com.saasbilling.repository.ExpenseRepository;
 import com.saasbilling.security.TenantContext;
+import com.saasbilling.storage.FileStorageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -20,10 +22,13 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final AuditLogService auditLogService;
+    private final FileStorageService fileStorageService;
 
-    public ExpenseService(ExpenseRepository expenseRepository, AuditLogService auditLogService) {
+    public ExpenseService(ExpenseRepository expenseRepository, AuditLogService auditLogService,
+                           FileStorageService fileStorageService) {
         this.expenseRepository = expenseRepository;
         this.auditLogService = auditLogService;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional
@@ -82,6 +87,21 @@ public class ExpenseService {
 
         auditLogService.record(businessId, TenantContext.currentUserId(), "EXPENSE_DELETED",
                 "EXPENSE", id, null, null);
+    }
+
+    @Transactional
+    public ExpenseResponse uploadAttachment(UUID id, MultipartFile file) {
+        UUID businessId = TenantContext.currentBusinessId();
+        Expense expense = getOwnedOrThrow(id, businessId);
+
+        FileStorageService.StoredFile stored = fileStorageService.store(businessId, "expense-attachments", file);
+        expense.setAttachmentUrl(stored.url());
+        expense = expenseRepository.save(expense);
+
+        auditLogService.record(businessId, TenantContext.currentUserId(), "EXPENSE_ATTACHMENT_UPLOADED",
+                "EXPENSE", expense.getId(), null, null);
+
+        return ExpenseResponse.from(expense);
     }
 
     // -----------------------------------------------------------------

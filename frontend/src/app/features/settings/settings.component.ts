@@ -23,6 +23,11 @@ export class SettingsComponent implements OnInit {
   readonly settingsSaved = signal(false);
   readonly settingsError = signal<string | null>(null);
 
+  readonly logoUploading = signal(false);
+  readonly logoError = signal<string | null>(null);
+
+  readonly planChangeError = signal<string | null>(null);
+
   readonly subscription = signal<Subscription | null>(null);
   readonly plans = ['FREE', 'BASIC', 'PROFESSIONAL', 'BUSINESS'];
   readonly planChanging = signal(false);
@@ -71,12 +76,64 @@ export class SettingsComponent implements OnInit {
   changePlan(plan: string): void {
     if (!this.authService.hasRole('OWNER')) return;
     this.planChanging.set(true);
+    this.planChangeError.set(null);
     this.subscriptionApi.changePlan(plan).subscribe({
       next: (sub) => {
         this.subscription.set(sub);
         this.planChanging.set(false);
       },
-      error: () => this.planChanging.set(false),
+      error: (err: HttpErrorResponse) => {
+        // A configured payment gateway rejects free self-grants of a paid
+        // plan - surface that clearly and point at checkout instead.
+        const apiError = err.error as ApiError | undefined;
+        this.planChangeError.set(apiError?.message ?? 'Failed to change plan.');
+        this.planChanging.set(false);
+      },
+    });
+  }
+
+  startCheckout(plan: string): void {
+    if (!this.authService.hasRole('OWNER')) return;
+    this.planChanging.set(true);
+    this.planChangeError.set(null);
+    // Razorpay Checkout itself (the razorpay-checkout.js widget) is not
+    // wired up in this sandbox build - this calls the backend to create
+    // the order and reports what would be needed to open it, since real
+    // checkout needs genuine Razorpay keys to test end-to-end.
+    this.subscriptionApi.checkout(plan).subscribe({
+      next: (checkout) => {
+        this.planChanging.set(false);
+        alert(
+          `Checkout order created (₹${checkout.amountPaise / 100} for ${checkout.plan}). ` +
+          `Opening Razorpay Checkout with this order is not wired up in this environment.`,
+        );
+      },
+      error: (err: HttpErrorResponse) => {
+        const apiError = err.error as ApiError | undefined;
+        this.planChangeError.set(apiError?.message ?? 'Checkout is not available.');
+        this.planChanging.set(false);
+      },
+    });
+  }
+
+  uploadLogo(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.logoUploading.set(true);
+    this.logoError.set(null);
+
+    this.businessApi.uploadLogo(file).subscribe({
+      next: (profile) => {
+        this.profileForm.patchValue({ logoUrl: profile.logoUrl });
+        this.logoUploading.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        const apiError = err.error as ApiError | undefined;
+        this.logoError.set(apiError?.message ?? 'Failed to upload logo.');
+        this.logoUploading.set(false);
+      },
     });
   }
 

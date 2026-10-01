@@ -55,8 +55,11 @@
           <input formControlName="website" />
         </div>
         <div class="form-field" style="flex: 1;">
-          <label>Logo URL</label>
-          <input formControlName="logoUrl" />
+          <label>Logo</label>
+          <input type="file" accept="image/png,image/jpeg,image/webp" (change)="uploadLogo($event)" />
+          <span *ngIf="logoUploading()" style="color: var(--color-text-muted); font-size: 0.85rem;">Uploading…</span>
+          <span *ngIf="logoError()" class="form-error">{{ logoError() }}</span>
+          <img *ngIf="profileForm.get(\'logoUrl\')?.value as logoUrl" [src]="logoUrl" alt="Business logo" style="max-height: 48px; margin-top: 4px;" />
         </div>
       </div>
       <button type="submit" class="btn-primary" [disabled]="profileLoading()">
@@ -133,19 +136,30 @@
       <span style="color: var(--color-text-muted);"> · {{ sub.status }}</span>
     </p>
     <p style="color: var(--color-text-muted); font-size: 0.85rem;">
-      Changing your plan here doesn't collect any payment yet — this is a manual switch while
-      subscription billing (Razorpay/Stripe) is still being built. Your plan controls limits on team
-      members, customers, and invoices per month.
+      Your plan controls limits on team members, customers, and invoices per month. The FREE tier can be
+      switched instantly; paid tiers go through checkout once payment collection is configured for this
+      deployment (otherwise they're also a manual switch, for testing).
     </p>
+    <div class="alert-error" *ngIf="planChangeError()">{{ planChangeError() }}</div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-      <button
-        *ngFor="let p of plans"
-        [class.btn-primary]="p === sub.plan"
-        [disabled]="planChanging() || p === sub.plan || !authService.hasRole('OWNER')"
-        (click)="changePlan(p)"
-      >
-        {{ p }}
-      </button>
+      <ng-container *ngFor="let p of plans">
+        <button
+          *ngIf="p === 'FREE'"
+          [class.btn-primary]="p === sub.plan"
+          [disabled]="planChanging() || p === sub.plan || !authService.hasRole('OWNER')"
+          (click)="changePlan(p)"
+        >
+          {{ p }}
+        </button>
+        <button
+          *ngIf="p !== 'FREE'"
+          [class.btn-primary]="p === sub.plan"
+          [disabled]="planChanging() || p === sub.plan || !authService.hasRole('OWNER')"
+          (click)="startCheckout(p)"
+        >
+          {{ p }}
+        </button>
+      </ng-container>
     </div>
     <p *ngIf="!authService.hasRole('OWNER')" style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 8px;">
       Only the business owner can change the plan.

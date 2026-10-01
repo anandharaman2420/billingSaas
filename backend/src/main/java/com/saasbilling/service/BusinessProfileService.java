@@ -6,18 +6,23 @@ import com.saasbilling.entity.Business;
 import com.saasbilling.exception.ResourceNotFoundException;
 import com.saasbilling.repository.BusinessRepository;
 import com.saasbilling.security.TenantContext;
+import com.saasbilling.storage.FileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class BusinessProfileService {
 
     private final BusinessRepository businessRepository;
     private final AuditLogService auditLogService;
+    private final FileStorageService fileStorageService;
 
-    public BusinessProfileService(BusinessRepository businessRepository, AuditLogService auditLogService) {
+    public BusinessProfileService(BusinessRepository businessRepository, AuditLogService auditLogService,
+                                   FileStorageService fileStorageService) {
         this.businessRepository = businessRepository;
         this.auditLogService = auditLogService;
+        this.fileStorageService = fileStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -49,6 +54,20 @@ public class BusinessProfileService {
         business = businessRepository.save(business);
 
         auditLogService.record(business.getId(), TenantContext.currentUserId(), "BUSINESS_PROFILE_UPDATED",
+                "BUSINESS", business.getId(), null, null);
+
+        return BusinessProfileResponse.from(business);
+    }
+
+    @Transactional
+    public BusinessProfileResponse uploadLogo(MultipartFile file) {
+        Business business = getOwnBusiness();
+        FileStorageService.StoredFile stored = fileStorageService.store(business.getId(), "logos", file);
+
+        business.setLogoUrl(stored.url());
+        business = businessRepository.save(business);
+
+        auditLogService.record(business.getId(), TenantContext.currentUserId(), "BUSINESS_LOGO_UPLOADED",
                 "BUSINESS", business.getId(), null, null);
 
         return BusinessProfileResponse.from(business);

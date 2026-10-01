@@ -42,6 +42,7 @@ public record InvoiceResponse(
             UUID serviceId,
             String itemName,
             String description,
+            String hsnSacCode,
             BigDecimal quantity,
             BigDecimal unitPrice,
             BigDecimal discountAmount,
@@ -52,7 +53,7 @@ public record InvoiceResponse(
         public static Item from(InvoiceItem item) {
             return new Item(
                     item.getId(), item.getItemType().name(), item.getProductId(), item.getServiceId(),
-                    item.getItemName(), item.getDescription(), item.getQuantity(), item.getUnitPrice(),
+                    item.getItemName(), item.getDescription(), item.getHsnSacCode(), item.getQuantity(), item.getUnitPrice(),
                     item.getDiscountAmount(), item.getTaxRatePercent(), item.getTaxAmount(), item.getLineTotal());
         }
     }

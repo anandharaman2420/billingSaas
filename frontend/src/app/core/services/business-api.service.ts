@@ -23,6 +23,12 @@ export class BusinessApiService {
     return this.http.put<BusinessProfile>(`${this.baseUrl}/profile`, request);
   }
 
+  uploadLogo(file: File): Observable<BusinessProfile> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<BusinessProfile>(`${this.baseUrl}/profile/logo`, formData);
+  }
+
   getSettings(): Observable<BusinessSettings> {
     return this.http.get<BusinessSettings>(`${this.baseUrl}/settings`);
   }

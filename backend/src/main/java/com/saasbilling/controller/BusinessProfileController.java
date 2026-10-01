@@ -6,6 +6,7 @@ import com.saasbilling.service.BusinessProfileService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/business/profile")
@@ -26,5 +27,11 @@ public class BusinessProfileController {
     @PutMapping
     public BusinessProfileResponse update(@Valid @RequestBody BusinessProfileRequest request) {
         return businessProfileService.update(request);
+    }
+
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PostMapping(value = "/logo", consumes = "multipart/form-data")
+    public BusinessProfileResponse uploadLogo(@RequestParam("file") MultipartFile file) {
+        return businessProfileService.uploadLogo(file);
     }
 }

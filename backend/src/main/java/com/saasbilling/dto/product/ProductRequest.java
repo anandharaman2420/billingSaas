@@ -14,6 +14,9 @@ public record ProductRequest(
         @Size(max = 50)
         String sku,
 
+        @Size(max = 20)
+        String hsnCode,
+
         UUID categoryId,
 
         String description,

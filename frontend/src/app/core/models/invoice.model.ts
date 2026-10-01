@@ -7,6 +7,7 @@ export interface InvoiceItem {
   serviceId?: string;
   itemName: string;
   description?: string;
+  hsnSacCode?: string;
   quantity: number;
   unitPrice: number;
   discountAmount: number;

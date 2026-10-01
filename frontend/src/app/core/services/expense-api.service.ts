@@ -32,4 +32,10 @@ export class ExpenseApiService {
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  uploadAttachment(id: string, file: File): Observable<Expense> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<Expense>(`${this.baseUrl}/${id}/attachment`, formData);
+  }
 }

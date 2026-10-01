@@ -10,6 +10,7 @@ public record ServiceResponse(
         UUID id,
         String serviceName,
         String description,
+        String sacCode,
         BigDecimal price,
         BigDecimal taxRatePercent,
         UUID categoryId,
@@ -19,7 +20,7 @@ public record ServiceResponse(
 ) {
     public static ServiceResponse from(BillableService s) {
         return new ServiceResponse(
-                s.getId(), s.getServiceName(), s.getDescription(), s.getPrice(), s.getTaxRatePercent(),
+                s.getId(), s.getServiceName(), s.getDescription(), s.getSacCode(), s.getPrice(), s.getTaxRatePercent(),
                 s.getCategoryId(), s.getStatus().name(), s.getCreatedAt(), s.getUpdatedAt());
     }
 }

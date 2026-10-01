@@ -119,6 +119,7 @@ public class ProductService {
     private void applyRequest(Product product, ProductRequest request) {
         product.setProductName(request.productName());
         product.setSku((request.sku() == null || request.sku().isBlank()) ? null : request.sku());
+        product.setHsnCode((request.hsnCode() == null || request.hsnCode().isBlank()) ? null : request.hsnCode());
         product.setCategoryId(request.categoryId());
         product.setDescription(request.description());
         product.setUnit(request.unit());

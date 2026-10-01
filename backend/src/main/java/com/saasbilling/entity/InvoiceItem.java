@@ -41,6 +41,9 @@ public class InvoiceItem {
     @Column(columnDefinition = "text")
     private String description;
 
+    @Column(name = "hsn_sac_code", length = 20)
+    private String hsnSacCode;
+
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal quantity = BigDecimal.ONE;
 

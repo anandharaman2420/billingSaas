@@ -4,6 +4,7 @@ export interface Product {
   id: string;
   productName: string;
   sku?: string;
+  hsnCode?: string;
   categoryId?: string;
   description?: string;
   unit: string;
@@ -21,6 +22,7 @@ export interface Product {
 export interface ProductRequest {
   productName: string;
   sku?: string;
+  hsnCode?: string;
   categoryId?: string;
   description?: string;
   unit: string;

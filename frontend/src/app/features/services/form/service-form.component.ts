@@ -27,6 +27,7 @@ export class ServiceFormComponent implements OnInit {
     this.form = this.fb.group({
       serviceName: ['', [Validators.required, Validators.maxLength(150)]],
       description: [''],
+    sacCode: [''],
       price: [0, [Validators.required, Validators.min(0)]],
       taxRatePercent: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     });

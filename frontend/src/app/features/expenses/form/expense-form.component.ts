@@ -18,6 +18,8 @@ import { ApiError } from '../../../core/models/auth.model';
 export class ExpenseFormComponent implements OnInit {
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly attachmentUploading = signal(false);
+  readonly attachmentUrl = signal<string | null>(null);
   readonly categories = signal<Category[]>([]);
   expenseId: string | null = null;
 
@@ -46,7 +48,10 @@ export class ExpenseFormComponent implements OnInit {
 
     this.expenseId = this.route.snapshot.paramMap.get('id');
     if (this.expenseId) {
-      this.expenseApi.getById(this.expenseId).subscribe((expense) => this.form.patchValue(expense as any));
+      this.expenseApi.getById(this.expenseId).subscribe((expense) => {
+        this.form.patchValue(expense as any);
+        this.attachmentUrl.set(expense.attachmentUrl ?? null);
+      });
     }
   }
 
@@ -73,6 +78,21 @@ export class ExpenseFormComponent implements OnInit {
         this.errorMessage.set(apiError?.message ?? 'Failed to save expense.');
         this.loading.set(false);
       },
+    });
+  }
+
+  uploadAttachment(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.expenseId) return; // save the expense first, then attach a receipt
+
+    this.attachmentUploading.set(true);
+    this.expenseApi.uploadAttachment(this.expenseId, file).subscribe({
+      next: (expense) => {
+        this.attachmentUrl.set(expense.attachmentUrl ?? null);
+        this.attachmentUploading.set(false);
+      },
+      error: () => this.attachmentUploading.set(false),
     });
   }
 

@@ -333,6 +333,31 @@ path — everything builds inside the containers.
       (OWNER-only plan switcher, clearly labeled as not collecting payment yet)
 - [x] Docker Compose and `.env.example` updated with the new SMTP/mail environment variables
 
+### Phase 9 — File uploads, HSN/SAC codes, Razorpay payment gateway
+- [x] Real file uploads (spec section 38): `FileStorageService` abstraction with a working
+      `LocalDiskFileStorageService` implementation (tenant-scoped directories, server-generated filenames,
+      content-type allowlist, 10 MB cap, path-traversal guard). `/api/files/**` streams files back, gated by
+      the caller's own `TenantContext` — the business id in the URL is never trusted for authorization, only
+      used to locate the file. Business logo upload (`POST /api/business/profile/logo`) and expense
+      attachment upload (`POST /api/expenses/{id}/attachment`) both wired end-to-end with frontend file
+      pickers. Swapping to S3-compatible storage later only means a new `FileStorageService` implementation
+      — no caller changes needed
+- [x] Advanced GST — HSN/SAC codes (spec section 38): `hsn_code` on Products, `sac_code` on Services
+      (migration `V9`), snapshotted onto each invoice line item at billing time (same rationale as
+      item name/price/tax rate already being snapshotted), shown in the invoice detail page and the PDF's
+      item table
+- [x] Razorpay payment gateway scaffold (spec section 38): `RazorpayClient` talks to Razorpay's plain REST
+      API directly via Spring's `RestClient` (no SDK dependency needed — the API is just HTTPS + Basic
+      auth). `POST /api/subscription/checkout` creates a Razorpay order; `POST /api/webhooks/razorpay`
+      receives the payment confirmation, with HMAC-SHA256 signature verification (constant-time comparison)
+      guarding the public endpoint before any of its content is trusted. Webhook delivery is idempotent on
+      the payment id, since Razorpay may redeliver the same event
+- [x] Once Razorpay is configured, `SubscriptionService.changePlan` refuses to let an OWNER self-grant a
+      paid plan for free — paid plans must go through checkout; the MANUAL plan-switch endpoint stays
+      available for FREE and for testing when no gateway is configured
+- [x] Tests: webhook signature verification (correct secret, wrong secret, tampered body, missing
+      signature, unconfigured secret), provider plan-change idempotency, checkout-refuses-when-unconfigured
+
 ## Known limitations (by design, for this phase)
 
 - Tokens are stored in `localStorage` on the frontend for simplicity. Consider httpOnly cookies for a
@@ -351,29 +376,36 @@ path — everything builds inside the containers.
 - Report export only covers CSV, and only for the Sales report — PDF and Excel export (spec section 19),
   and CSV for the other five reports, are straightforward additions following the same pattern in
   `ReportController` but weren't all built out to keep that phase's scope contained
-- Logo upload is a plain URL field (`logoUrl`), not a file upload — a real image upload (to S3-compatible
-  storage or similar) is a future addition once file storage is wired up
-- `PlanLimits` are still static per-plan constants — a real payment gateway (Razorpay/Stripe) isn't
-  integrated, so `SubscriptionService.changePlan` doesn't collect payment; it's a manual/admin plan switch
-  only. Real gateway integration (checkout, webhooks that call an `applyProviderPlanChange`-style method)
-  is the natural next step and was scoped out to keep this phase's deliverable buildable and testable
-  without external API keys this sandbox doesn't have
 - `PaymentReminderJob` has no throttling — an `OVERDUE` invoice gets a reminder email every single day the
   job runs, not just once. A `last_reminder_sent_at` column would fix this in a future pass
 - Global search only covers Customers/Products/Services/Invoices, not Payments/Expenses — a straightforward
   addition to `SearchService` following the same pattern
+- Razorpay integration is a scaffold, not exercised end-to-end here — needs real test-mode keys
+  (`RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`/`RAZORPAY_WEBHOOK_SECRET`) and a webhook pointed at
+  `/api/webhooks/razorpay` to verify for real. The frontend's checkout call creates a real order but does
+  **not** open Razorpay's Checkout widget (`razorpay-checkout.js`) yet — that's a small frontend addition
+  once there are real keys to test it against
+- Stripe is not implemented — `SubscriptionProvider.STRIPE` exists in the enum as a reserved value, but
+  only Razorpay has a client; a Stripe integration would follow the same `PaymentGatewayClient`-shaped
+  pattern as `RazorpayClient`
+- PlanPricing is a static hardcoded map (₹499/₹1499/₹3999 for Basic/Professional/Business) — real pricing
+  should move to configuration or a database table once actual prices are decided
+- Local disk file storage doesn't survive a container redeploy and isn't shared across multiple backend
+  replicas — fine for a single-instance deployment (matches this project's current Docker Compose setup),
+  but a real multi-instance production deployment needs the S3-compatible `FileStorageService`
+  implementation this phase's abstraction was built to support
 - Backend was not compiled in this environment (no Maven/Maven-Central network access here) — run
   `mvn clean install` locally to verify before deploying. The Dockerfiles were similarly written but not
   build-tested here for the same reason (no Docker daemon / registry access in this sandbox) — build and
-  run `docker compose up --build` locally to verify before relying on it. Real SMTP delivery and the
-  scheduled jobs' cron timing were not exercised end-to-end here either — verify locally with real SMTP
-  credentials and/or a shortened cron expression before relying on them in production.
+  run `docker compose up --build` locally to verify before relying on it. Real SMTP delivery, the scheduled
+  jobs' cron timing, file uploads, and the Razorpay scaffold were not exercised end-to-end here either —
+  verify all of these locally before relying on them in production.
 
 ## Next recommended phase
 
-**Phase 9: Real payment gateway integration + advanced GST + file uploads** — the pieces Phase 8 explicitly
-deferred: wiring Razorpay/Stripe checkout and webhooks into `SubscriptionService` so plan changes actually
-collect payment, advanced GST features (spec section 38 — e-invoicing, HSN/SAC codes), and real file upload
-for business logos and expense attachments (currently both are plain URL fields) via S3-compatible object
-storage. A `last_reminder_sent_at` column to throttle `PaymentReminderJob` fits naturally alongside this
+**Phase 10: Razorpay Checkout widget + Stripe + multi-branch support** — finishing what Phase 9 scaffolded:
+wiring the actual `razorpay-checkout.js` widget into the frontend checkout flow, a parallel Stripe
+integration behind the same pattern as `RazorpayClient`, and multi-branch support (spec section 38) for
+businesses that operate more than one physical location. A `last_reminder_sent_at` column to throttle
+`PaymentReminderJob`, and moving `PlanPricing` to real configuration, fit naturally alongside this
 phase too.

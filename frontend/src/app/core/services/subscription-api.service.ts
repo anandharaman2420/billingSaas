@@ -17,4 +17,16 @@ export class SubscriptionApiService {
   changePlan(plan: string): Observable<Subscription> {
     return this.http.put<Subscription>(`${this.baseUrl}/plan`, { plan });
   }
+
+  checkout(plan: string): Observable<CheckoutResponse> {
+    return this.http.post<CheckoutResponse>(`${this.baseUrl}/checkout`, { plan });
+  }
+}
+
+export interface CheckoutResponse {
+  orderId: string;
+  amountPaise: number;
+  currency: string;
+  keyId: string;
+  plan: string;
 }

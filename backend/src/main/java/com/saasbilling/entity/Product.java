@@ -28,6 +28,9 @@ public class Product extends BaseEntity {
     @Column(length = 50)
     private String sku;
 
+    @Column(name = "hsn_code", length = 20)
+    private String hsnCode;
+
     @Column(name = "category_id")
     private UUID categoryId;
 

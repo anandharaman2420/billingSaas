@@ -52,6 +52,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login",
                             "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/refresh").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/auth/activate").permitAll()
+                    // Razorpay calls this without a JWT - it is authenticated by HMAC signature verification inside the controller instead.
+                    .requestMatchers(HttpMethod.POST, "/api/webhooks/razorpay").permitAll()
                     .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     .anyRequest().authenticated())

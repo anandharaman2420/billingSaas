@@ -4,6 +4,7 @@ export interface BillableService {
   id: string;
   serviceName: string;
   description?: string;
+  sacCode?: string;
   price: number;
   taxRatePercent: number;
   categoryId?: string;
@@ -15,6 +16,7 @@ export interface BillableService {
 export interface ServiceRequest {
   serviceName: string;
   description?: string;
+  sacCode?: string;
   price: number;
   taxRatePercent: number;
   categoryId?: string;
