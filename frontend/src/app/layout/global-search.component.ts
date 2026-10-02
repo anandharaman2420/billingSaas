@@ -3,8 +3,8 @@ import { Component, ElementRef, HostListener, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
-import { SearchApiService } from '../../core/services/search-api.service';
-import { GlobalSearchResponse } from '../../core/models/search.model';
+import { SearchApiService } from '../core/services/search-api.service';
+import { GlobalSearchResponse } from '../core/models/search.model';
 
 @Component({
   selector: 'app-global-search',

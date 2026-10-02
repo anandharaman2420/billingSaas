@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ExpenseApiService } from '../../../core/services/expense-api.service';
@@ -16,6 +16,8 @@ import { ApiError } from '../../../core/models/auth.model';
   templateUrl: './expense-form.component.html',
 })
 export class ExpenseFormComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly attachmentUploading = signal(false);
@@ -36,7 +38,6 @@ export class ExpenseFormComponent implements OnInit {
   });
 
   constructor(
-    private fb: FormBuilder,
     private expenseApi: ExpenseApiService,
     private categoryApi: CategoryApiService,
     private route: ActivatedRoute,

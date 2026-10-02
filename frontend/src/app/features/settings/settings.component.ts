@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BusinessApiService } from '../../core/services/business-api.service';
 import { SubscriptionApiService } from '../../core/services/subscription-api.service';
@@ -15,6 +15,8 @@ import { ApiError } from '../../core/models/auth.model';
   templateUrl: './settings.component.html',
 })
 export class SettingsComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+
   readonly profileLoading = signal(false);
   readonly profileSaved = signal(false);
   readonly profileError = signal<string | null>(null);
@@ -61,7 +63,6 @@ export class SettingsComponent implements OnInit {
   });
 
   constructor(
-    private fb: FormBuilder,
     private businessApi: BusinessApiService,
     private subscriptionApi: SubscriptionApiService,
     readonly authService: AuthService,

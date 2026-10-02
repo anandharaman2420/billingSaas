@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { InvoiceApiService } from '../../../core/services/invoice-api.service';
@@ -15,6 +15,8 @@ import { Payment, PaymentMethod } from '../../../core/models/payment.model';
   templateUrl: './invoice-detail.component.html',
 })
 export class InvoiceDetailComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+
   readonly invoice = signal<Invoice | null>(null);
   readonly payments = signal<Payment[]>([]);
   readonly loading = signal(true);
@@ -33,7 +35,6 @@ export class InvoiceDetailComponent implements OnInit {
   });
 
   constructor(
-    private fb: FormBuilder,
     private invoiceApi: InvoiceApiService,
     private paymentApi: PaymentApiService,
     private route: ActivatedRoute,

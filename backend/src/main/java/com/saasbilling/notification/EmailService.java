@@ -5,12 +5,12 @@ import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 
 /**
@@ -106,7 +106,7 @@ public class EmailService {
             helper.setText(htmlBody, true);
 
             if (attachmentBytes != null && attachmentName != null) {
-                helper.addAttachment(attachmentName, new ByteArrayInputStream(attachmentBytes), "application/pdf");
+                helper.addAttachment(attachmentName, new ByteArrayResource(attachmentBytes), "application/pdf");
             }
 
             mailSender.send(message);

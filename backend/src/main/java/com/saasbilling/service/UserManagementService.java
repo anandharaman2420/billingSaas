@@ -130,11 +130,11 @@ public class UserManagementService {
         User user = getOwnedOrThrow(id, businessId);
         assertActorCanManageRole(user.getRole());
 
-        if (user.getId().equals(TenantContext.currentUserId())) {
-            throw new ForbiddenOperationException("You cannot disable your own account");
-        }
         if (user.getRole() == UserRole.OWNER) {
             assertNotLastActiveOwner(businessId, "disable");
+        }
+        if (user.getId().equals(TenantContext.currentUserId())) {
+            throw new ForbiddenOperationException("You cannot disable your own account");
         }
 
         user.setStatus(UserStatus.DISABLED);

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserApiService } from '../../../core/services/user-api.service';
@@ -14,6 +14,8 @@ import { ApiError } from '../../../core/models/auth.model';
   templateUrl: './user-form.component.html',
 })
 export class UserFormComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   userId: string | null = null;
@@ -29,7 +31,6 @@ export class UserFormComponent implements OnInit {
   });
 
   constructor(
-    private fb: FormBuilder,
     private userApi: UserApiService,
     private route: ActivatedRoute,
     private router: Router,

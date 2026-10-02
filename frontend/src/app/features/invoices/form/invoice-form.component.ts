@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InvoiceApiService } from '../../../core/services/invoice-api.service';
@@ -29,6 +29,8 @@ interface CatalogEntry {
   templateUrl: './invoice-form.component.html',
 })
 export class InvoiceFormComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly customers = signal<Customer[]>([]);
@@ -46,7 +48,6 @@ export class InvoiceFormComponent implements OnInit {
   });
 
   constructor(
-    private fb: FormBuilder,
     private invoiceApi: InvoiceApiService,
     private customerApi: CustomerApiService,
     private productApi: ProductApiService,

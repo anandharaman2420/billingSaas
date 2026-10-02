@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth/auth.service';
@@ -14,6 +14,11 @@ import { ApiError } from '../../core/models/auth.model';
   templateUrl: './profile.component.html',
 })
 export class ProfileComponent {
+  private readonly fb = inject(FormBuilder);
+  readonly authService = inject(AuthService);
+  private readonly userApi = inject(UserApiService);
+  private readonly http = inject(HttpClient);
+
   readonly profileLoading = signal(false);
   readonly profileSaved = signal(false);
   readonly profileError = signal<string | null>(null);
@@ -31,13 +36,6 @@ export class ProfileComponent {
     currentPassword: ['', Validators.required],
     newPassword: ['', [Validators.required, Validators.minLength(8)]],
   });
-
-  constructor(
-    private fb: FormBuilder,
-    private http: HttpClient,
-    private userApi: UserApiService,
-    readonly authService: AuthService,
-  ) {}
 
   saveProfile(): void {
     if (this.profileForm.invalid) {

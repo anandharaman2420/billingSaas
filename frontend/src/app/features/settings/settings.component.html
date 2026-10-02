@@ -59,7 +59,7 @@
           <input type="file" accept="image/png,image/jpeg,image/webp" (change)="uploadLogo($event)" />
           <span *ngIf="logoUploading()" style="color: var(--color-text-muted); font-size: 0.85rem;">Uploading…</span>
           <span *ngIf="logoError()" class="form-error">{{ logoError() }}</span>
-          <img *ngIf="profileForm.get(\'logoUrl\')?.value as logoUrl" [src]="logoUrl" alt="Business logo" style="max-height: 48px; margin-top: 4px;" />
+          <img *ngIf="profileForm.get('logoUrl')?.value as logoUrl" [src]="logoUrl" alt="Business logo" style="max-height: 48px; margin-top: 4px;" />
         </div>
       </div>
       <button type="submit" class="btn-primary" [disabled]="profileLoading()">
