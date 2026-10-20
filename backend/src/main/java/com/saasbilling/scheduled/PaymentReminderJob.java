@@ -16,43 +16,39 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
 /**
  * Spec section 38: "Payment reminders". Runs after the overdue sweep
- * each day and emails the customer on two occasions per invoice's
- * lifecycle: once when it's 2 days from its due date (a gentle nudge),
- * and daily once it's actually OVERDUE.
- *
- * Known limitation: there's no "last reminded at" tracking yet, so an
- * OVERDUE invoice gets a reminder every single day the sweep runs,
- * not just once. Acceptable for now (daily overdue nudges are a
- * reasonable default for a small business), but a future pass could
- * add a `payments_reminder_last_sent_at` column to throttle this to,
- * say, every 3 days.
+ * each day and sends a due-soon nudge two days before an invoice's due
+ * date, then throttles subsequent overdue reminders using the invoice's
+ * last-reminder timestamp.
  */
 @Component
 public class PaymentReminderJob {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentReminderJob.class);
     private static final int DUE_SOON_DAYS_AHEAD = 2;
-
     private final BusinessRepository businessRepository;
     private final InvoiceRepository invoiceRepository;
     private final CustomerRepository customerRepository;
     private final EmailService emailService;
+    private final int throttleDays;
 
     public PaymentReminderJob(BusinessRepository businessRepository,
                                InvoiceRepository invoiceRepository,
                                CustomerRepository customerRepository,
-                               EmailService emailService) {
+                               EmailService emailService,
+                               @org.springframework.beans.factory.annotation.Value("${app.scheduled.payment-reminder-throttle-days:3}") int throttleDays) {
         this.businessRepository = businessRepository;
         this.invoiceRepository = invoiceRepository;
         this.customerRepository = customerRepository;
         this.emailService = emailService;
+        this.throttleDays = Math.max(1, throttleDays);
     }
 
     @Scheduled(cron = "${app.scheduled.payment-reminder-cron:0 0 8 * * *}") // 8 AM daily by default
-    @Transactional(readOnly = true)
+    @Transactional
     public void run() {
         LocalDate today = LocalDate.now();
         int sent = 0;
@@ -77,7 +73,13 @@ public class PaymentReminderJob {
     }
 
     private int remind(Invoice invoice, boolean overdue) {
-        Customer customer = customerRepository.findByIdAndBusinessId(invoice.getCustomerId(), invoice.getBusinessId())
+        OffsetDateTime now = OffsetDateTime.now();
+        if (invoice.getLastReminderSentAt() != null
+                && invoice.getLastReminderSentAt().plusDays(throttleDays).isAfter(now)) {
+            return 0;
+        }
+        Customer customer = customerRepository.findByIdAndBusinessIdAndBranchId(
+                        invoice.getCustomerId(), invoice.getBusinessId(), invoice.getBranchId())
                 .orElse(null);
         if (customer == null || customer.getEmail() == null || customer.getEmail().isBlank()) {
             return 0;
@@ -86,6 +88,8 @@ public class PaymentReminderJob {
         emailService.sendPaymentReminderEmail(customer.getEmail(), customer.getCustomerName(),
                 invoice.getInvoiceNumber() != null ? invoice.getInvoiceNumber() : "DRAFT",
                 invoice.getBalanceDue(), overdue);
+        invoice.setLastReminderSentAt(now);
+        invoiceRepository.save(invoice);
         return 1;
     }
 }

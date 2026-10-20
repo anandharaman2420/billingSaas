@@ -18,6 +18,13 @@ public class BusinessSettingsDtos {
             @Min(value = 1, message = "Next invoice sequence must be at least 1")
             long invoiceNextSequence,
 
+            @Pattern(regexp = "CLASSIC|MODERN|MINIMAL", message = "Invoice template must be CLASSIC, MODERN, or MINIMAL")
+            String invoiceTemplate,
+
+            String posPrefix,
+            String posNumberFormat,
+            long posNextSequence,
+
             @Min(value = 1) @jakarta.validation.constraints.Max(value = 12)
             short financialYearStartMonth,
 
@@ -40,12 +47,18 @@ public class BusinessSettingsDtos {
 
     public record BusinessSettingsResponse(
             String invoicePrefix, String invoiceNumberFormat, long invoiceNextSequence,
+            String invoiceTemplate,
+            String posPrefix, String posNumberFormat, long posNextSequence,
             short financialYearStartMonth, int defaultDueDays, String currency, String taxMode,
             String invoiceNotes, String invoiceTerms, String themePreference
     ) {
         public static BusinessSettingsResponse from(BusinessSettings s) {
             return new BusinessSettingsResponse(
                     s.getInvoicePrefix(), s.getInvoiceNumberFormat(), s.getInvoiceNextSequence(),
+                    s.getInvoiceTemplate() != null ? s.getInvoiceTemplate() : "CLASSIC",
+                    s.getPosPrefix() != null ? s.getPosPrefix() : "BILL",
+                    s.getPosNumberFormat() != null ? s.getPosNumberFormat() : "{PREFIX}-{YEAR}-{SEQ:00000}",
+                    s.getPosNextSequence() > 0 ? s.getPosNextSequence() : 1L,
                     s.getFinancialYearStartMonth(), s.getDefaultDueDays(), s.getCurrency(), s.getTaxMode(),
                     s.getInvoiceNotes(), s.getInvoiceTerms(), s.getThemePreference());
         }

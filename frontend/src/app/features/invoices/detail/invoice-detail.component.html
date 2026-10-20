@@ -1,178 +1,186 @@
-<div style="max-width: 800px; margin: 32px auto;" *ngIf="invoice() as inv">
-  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+<div class="page page-sm" *ngIf="invoice() as inv">
+  <!-- Page Header -->
+  <header class="page-header" style="align-items: flex-start;">
     <div>
-      <h1 style="margin: 0 0 4px;">{{ inv.invoiceNumber || 'Draft invoice' }}</h1>
-      <span [style.color]="statusColor(inv.status)" style="font-weight: 700;">{{ inv.status }}</span>
+      <h1 style="margin-bottom:6px;">{{ inv.invoiceNumber || 'Draft Invoice' }}</h1>
+      <span class="badge" [ngClass]="invoiceStatusBadge(inv.status)" style="font-size:12px;">{{ inv.status }}</span>
     </div>
-    <div style="display: flex; gap: 8px;">
-      <button (click)="downloadPdf()">Download PDF</button>
-      <button *ngIf="inv.status !== 'DRAFT'" [disabled]="actionInProgress()" (click)="emailInvoice()">Email to customer</button>
-      <button *ngIf="inv.status === 'DRAFT'" (click)="edit()">Edit</button>
-      <button *ngIf="inv.status === 'DRAFT' && canManage()" class="btn-primary" [disabled]="actionInProgress()" (click)="issue()">
-        Issue invoice
+    <div class="btn-group">
+      <button class="btn btn-secondary btn-sm" (click)="downloadPdf()" aria-label="Download PDF">📄 PDF</button>
+      <button *ngIf="inv.status !== 'DRAFT'" class="btn btn-secondary btn-sm" [disabled]="actionInProgress()" (click)="emailInvoice()" aria-label="Email invoice">📧 Email</button>
+      <button *ngIf="inv.status === 'DRAFT'" class="btn btn-secondary btn-sm" (click)="edit()" aria-label="Edit invoice">✏️ Edit</button>
+      <button *ngIf="inv.status === 'DRAFT' && canManage()" class="btn btn-primary btn-sm" [disabled]="actionInProgress()" (click)="issue()">✅ Issue Invoice</button>
+      <button *ngIf="canRecordPayment()" class="btn btn-primary btn-sm" (click)="togglePaymentForm()">
+        {{ showPaymentForm() ? 'Cancel' : '💰 Record Payment' }}
       </button>
-      <button *ngIf="canRecordPayment()" class="btn-primary" (click)="togglePaymentForm()">
-        {{ showPaymentForm() ? 'Cancel' : 'Record payment' }}
-      </button>
-      <button *ngIf="inv.status !== 'CANCELLED' && canManage()" [disabled]="actionInProgress()" (click)="cancel()">
-        Cancel
-      </button>
+      <button *ngIf="inv.status !== 'CANCELLED' && canManage()" class="btn btn-danger btn-sm" [disabled]="actionInProgress()" (click)="cancel()">❌ Cancel</button>
     </div>
-  </div>
+  </header>
 
-  <div class="card" *ngIf="showPaymentForm()" style="margin-bottom: 16px;">
-    <h3 style="margin-top: 0;">Record a payment</h3>
-    <div class="alert-error" *ngIf="paymentError()">{{ paymentError() }}</div>
+  <!-- Record Payment Form -->
+  <div class="card" *ngIf="showPaymentForm()" style="margin-bottom: 20px;">
+    <h3 style="margin-top:0; font-size:15px; font-weight:600; margin-bottom:16px;">💰 Record a Payment</h3>
+    <div class="alert-error" *ngIf="paymentError()" role="alert">{{ paymentError() }}</div>
     <form [formGroup]="paymentForm" (ngSubmit)="submitPayment()">
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>Amount (₹) *</label>
-          <input type="number" formControlName="amount" min="0.01" step="0.01" />
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Amount (₹) *</label>
+          <input type="number" formControlName="amount" min="0.01" step="0.01" placeholder="0.00" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Payment date *</label>
+        <div class="form-field">
+          <label class="form-label">Payment Date *</label>
           <input type="date" formControlName="paymentDate" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Method *</label>
+        <div class="form-field">
+          <label class="form-label">Method *</label>
           <select formControlName="paymentMethod">
             <option *ngFor="let m of paymentMethods" [value]="m">{{ m }}</option>
           </select>
         </div>
       </div>
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>Reference number</label>
-          <input formControlName="referenceNumber" placeholder="UPI/cheque/txn ref" />
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Reference Number</label>
+          <input formControlName="referenceNumber" placeholder="UPI / cheque / txn ref" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Notes</label>
-          <input formControlName="notes" />
+        <div class="form-field">
+          <label class="form-label">Notes</label>
+          <input formControlName="notes" placeholder="Optional notes" />
         </div>
       </div>
-      <button type="submit" class="btn-primary" [disabled]="actionInProgress()">
-        {{ actionInProgress() ? 'Saving…' : 'Save payment' }}
+      <button type="submit" class="btn btn-primary" [disabled]="actionInProgress()">
+        {{ actionInProgress() ? 'Saving…' : 'Save Payment' }}
       </button>
     </form>
   </div>
 
+  <!-- Invoice Meta -->
   <div class="card" style="margin-bottom: 16px;">
-    <div style="display: flex; justify-content: space-between;">
-      <div>
-        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Invoice date</div>
-        <div>{{ inv.invoiceDate | date: 'dd MMM yyyy' }}</div>
+    <div class="inv-meta">
+      <div class="inv-meta-item">
+        <div class="text-muted" style="font-size:12px; text-transform:uppercase; letter-spacing:0.04em;">Invoice Date</div>
+        <div class="fw-600">{{ inv.invoiceDate | date: 'dd MMM yyyy' }}</div>
       </div>
-      <div>
-        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Due date</div>
-        <div>{{ inv.dueDate ? (inv.dueDate | date: 'dd MMM yyyy') : '—' }}</div>
+      <div class="inv-meta-item">
+        <div class="text-muted" style="font-size:12px; text-transform:uppercase; letter-spacing:0.04em;">Due Date</div>
+        <div class="fw-600">{{ inv.dueDate ? (inv.dueDate | date: 'dd MMM yyyy') : '—' }}</div>
       </div>
-      <div style="text-align: right;">
-        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Balance due</div>
-        <div style="font-weight: 700; font-size: 1.1rem;">₹{{ inv.balanceDue | number: '1.2-2' }}</div>
+      <div class="inv-meta-item" style="text-align:right;">
+        <div class="text-muted" style="font-size:12px; text-transform:uppercase; letter-spacing:0.04em;">Balance Due</div>
+        <div [class.text-danger]="inv.balanceDue > 0" style="font-size:20px; font-weight:700;">₹{{ inv.balanceDue | number: '1.2-2' }}</div>
       </div>
     </div>
   </div>
 
+  <!-- Line Items -->
   <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 16px;">
-    <table style="width: 100%; border-collapse: collapse;">
+    <table class="data-table" aria-label="Invoice line items">
       <thead>
-        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
-          <th style="padding: 12px;">Item</th>
-          <th style="padding: 12px;">HSN/SAC</th>
-          <th style="padding: 12px; text-align: right;">Qty</th>
-          <th style="padding: 12px; text-align: right;">Unit price</th>
-          <th style="padding: 12px; text-align: right;">Discount</th>
-          <th style="padding: 12px; text-align: right;">Tax</th>
-          <th style="padding: 12px; text-align: right;">Amount</th>
+        <tr>
+          <th scope="col">Item</th>
+          <th scope="col">HSN/SAC</th>
+          <th scope="col" class="text-right">Qty</th>
+          <th scope="col" class="text-right">Unit Price</th>
+          <th scope="col" class="text-right">Discount</th>
+          <th scope="col" class="text-right">Tax</th>
+          <th scope="col" class="text-right">Amount</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let item of inv.items" style="border-bottom: 1px solid var(--color-border);">
-          <td style="padding: 12px;">{{ item.itemName }}</td>
-          <td style="padding: 12px;">{{ item.hsnSacCode || '—' }}</td>
-          <td style="padding: 12px; text-align: right;">{{ item.quantity }}</td>
-          <td style="padding: 12px; text-align: right;">₹{{ item.unitPrice | number: '1.2-2' }}</td>
-          <td style="padding: 12px; text-align: right;">₹{{ item.discountAmount | number: '1.2-2' }}</td>
-          <td style="padding: 12px; text-align: right;">{{ item.taxRatePercent }}%</td>
-          <td style="padding: 12px; text-align: right; font-weight: 600;">₹{{ item.lineTotal | number: '1.2-2' }}</td>
+        <tr *ngFor="let item of inv.items">
+          <td class="fw-600">{{ item.itemName }}</td>
+          <td class="text-muted">{{ item.hsnSacCode || '—' }}</td>
+          <td class="text-right">{{ item.quantity }}</td>
+          <td class="text-right">₹{{ item.unitPrice | number: '1.2-2' }}</td>
+          <td class="text-right text-muted">₹{{ item.discountAmount | number: '1.2-2' }}</td>
+          <td class="text-right text-muted">{{ item.taxRatePercent }}%</td>
+          <td class="text-right fw-600">₹{{ item.lineTotal | number: '1.2-2' }}</td>
         </tr>
       </tbody>
     </table>
   </div>
 
+  <!-- Totals -->
   <div style="display: flex; justify-content: flex-end;">
-    <div class="card" style="min-width: 280px;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>Subtotal</span><span>₹{{ inv.subtotal | number: '1.2-2' }}</span>
-      </div>
-      <div *ngIf="inv.itemDiscountTotal > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>Item discounts</span><span>-₹{{ inv.itemDiscountTotal | number: '1.2-2' }}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>Taxable amount</span><span>₹{{ inv.taxableAmount | number: '1.2-2' }}</span>
-      </div>
-      <div *ngIf="inv.cgstAmount > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>CGST</span><span>₹{{ inv.cgstAmount | number: '1.2-2' }}</span>
-      </div>
-      <div *ngIf="inv.sgstAmount > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>SGST</span><span>₹{{ inv.sgstAmount | number: '1.2-2' }}</span>
-      </div>
-      <div *ngIf="inv.igstAmount > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>IGST</span><span>₹{{ inv.igstAmount | number: '1.2-2' }}</span>
-      </div>
-      <div *ngIf="inv.additionalDiscountAmount > 0" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>Additional discount</span><span>-₹{{ inv.additionalDiscountAmount | number: '1.2-2' }}</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; border-top: 1px solid var(--color-border); padding-top: 8px; font-weight: 700; font-size: 1.1rem;">
-        <span>Grand total</span><span>₹{{ inv.grandTotal | number: '1.2-2' }}</span>
-      </div>
-      <div *ngIf="inv.amountPaid > 0" style="display: flex; justify-content: space-between; margin-top: 6px; color: var(--color-success);">
-        <span>Amount paid</span><span>₹{{ inv.amountPaid | number: '1.2-2' }}</span>
-      </div>
+    <div class="card" style="min-width: 300px;">
+      <div class="totals-row"><span>Subtotal</span><span>₹{{ inv.subtotal | number: '1.2-2' }}</span></div>
+      <div *ngIf="inv.itemDiscountTotal > 0" class="totals-row text-danger"><span>Item Discounts</span><span>-₹{{ inv.itemDiscountTotal | number: '1.2-2' }}</span></div>
+      <div class="totals-row"><span>Taxable Amount</span><span>₹{{ inv.taxableAmount | number: '1.2-2' }}</span></div>
+      <div *ngIf="inv.cgstAmount > 0" class="totals-row text-muted"><span>CGST</span><span>₹{{ inv.cgstAmount | number: '1.2-2' }}</span></div>
+      <div *ngIf="inv.sgstAmount > 0" class="totals-row text-muted"><span>SGST</span><span>₹{{ inv.sgstAmount | number: '1.2-2' }}</span></div>
+      <div *ngIf="inv.igstAmount > 0" class="totals-row text-muted"><span>IGST</span><span>₹{{ inv.igstAmount | number: '1.2-2' }}</span></div>
+      <div *ngIf="inv.additionalDiscountAmount > 0" class="totals-row text-danger"><span>Additional Discount</span><span>-₹{{ inv.additionalDiscountAmount | number: '1.2-2' }}</span></div>
+      <hr class="divider" />
+      <div class="totals-row" style="font-size:16px; font-weight:700;"><span>Grand Total</span><span>₹{{ inv.grandTotal | number: '1.2-2' }}</span></div>
+      <div *ngIf="inv.amountPaid > 0" class="totals-row text-success"><span>Amount Paid</span><span>₹{{ inv.amountPaid | number: '1.2-2' }}</span></div>
     </div>
   </div>
 
-  <div class="card" *ngIf="payments().length > 0" style="margin-top: 16px;">
-    <h3 style="margin-top: 0;">Payment history</h3>
-    <table style="width: 100%; border-collapse: collapse;">
+  <!-- Payment History -->
+  <div class="card" *ngIf="payments().length > 0" style="margin-top: 20px;">
+    <h3 style="margin-top:0; font-size:15px; font-weight:600; margin-bottom:14px;">Payment History</h3>
+    <table class="data-table" aria-label="Payment history">
       <thead>
-        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
-          <th style="padding: 8px 0;">Date</th>
-          <th style="padding: 8px 0;">Method</th>
-          <th style="padding: 8px 0;">Reference</th>
-          <th style="padding: 8px 0; text-align: right;">Amount</th>
-          <th style="padding: 8px 0;"></th>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Method</th>
+          <th scope="col">Reference</th>
+          <th scope="col" class="text-right">Amount</th>
+          <th scope="col" class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let p of payments()" style="border-bottom: 1px solid var(--color-border);">
-          <td style="padding: 8px 0;">{{ p.paymentDate | date: 'dd MMM yyyy' }}</td>
-          <td style="padding: 8px 0;">{{ p.paymentMethod }}</td>
-          <td style="padding: 8px 0;">{{ p.referenceNumber || '—' }}</td>
-          <td style="padding: 8px 0; text-align: right;">₹{{ p.amount | number: '1.2-2' }}</td>
-          <td style="padding: 8px 0; text-align: right;">
-            <button *ngIf="canManage()" (click)="voidPayment(p)">Void</button>
+        <tr *ngFor="let p of payments()">
+          <td class="text-muted">{{ p.paymentDate | date: 'dd MMM yyyy' }}</td>
+          <td><span class="badge badge-neutral">{{ p.paymentMethod }}</span></td>
+          <td class="text-muted">{{ p.referenceNumber || '—' }}</td>
+          <td class="text-right fw-600 text-success">₹{{ p.amount | number: '1.2-2' }}</td>
+          <td class="table-actions">
+            <button *ngIf="canManage()" class="btn btn-danger btn-sm" (click)="voidPayment(p)" aria-label="Void payment">Void</button>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 
+  <!-- Notes & Terms -->
   <div class="card" *ngIf="inv.notes || inv.terms" style="margin-top: 16px;">
-    <div *ngIf="inv.notes">
-      <strong>Notes</strong>
-      <p>{{ inv.notes }}</p>
+    <div *ngIf="inv.notes" style="margin-bottom: 12px;">
+      <div class="fw-600" style="margin-bottom:4px;">Notes</div>
+      <p class="text-muted" style="margin:0;">{{ inv.notes }}</p>
     </div>
     <div *ngIf="inv.terms">
-      <strong>Terms &amp; Conditions</strong>
-      <p>{{ inv.terms }}</p>
+      <div class="fw-600" style="margin-bottom:4px;">Terms &amp; Conditions</div>
+      <p class="text-muted" style="margin:0;">{{ inv.terms }}</p>
     </div>
   </div>
 
-  <div class="card" *ngIf="inv.status === 'CANCELLED'" style="margin-top: 16px; border-color: var(--color-danger);">
-    <strong style="color: var(--color-danger);">Cancelled</strong>
-    <p>{{ inv.cancellationReason }}</p>
+  <!-- Cancelled -->
+  <div class="card" *ngIf="inv.status === 'CANCELLED'" style="margin-top: 16px; border-color: var(--color-danger); background: var(--color-danger-light);">
+    <div class="fw-600 text-danger">❌ Invoice Cancelled</div>
+    <p style="margin: 6px 0 0; font-size:13px;">{{ inv.cancellationReason }}</p>
   </div>
 </div>
 
-<div *ngIf="loading()" style="text-align: center; padding: 48px; color: var(--color-text-muted);">Loading…</div>
+<div *ngIf="loading()" style="text-align: center; padding: 64px; color: var(--color-text-muted);">
+  <div style="font-size: 32px;">⏳</div>
+  <p style="margin-top: 12px;">Loading invoice...</p>
+</div>
+
+<style>
+.inv-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.inv-meta-item { flex: 1; min-width: 100px; }
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 13.5px;
+  gap: 16px;
+}
+.divider { border: none; border-top: 1px solid var(--color-border); margin: 10px 0; }
+</style>

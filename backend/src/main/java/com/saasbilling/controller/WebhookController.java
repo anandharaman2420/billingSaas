@@ -3,6 +3,8 @@ package com.saasbilling.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.saasbilling.payment.RazorpayClient;
+import com.saasbilling.payment.StripeClient;
+import com.saasbilling.entity.SubscriptionProvider;
 import com.saasbilling.service.SubscriptionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,11 +29,14 @@ public class WebhookController {
     private static final Logger log = LoggerFactory.getLogger(WebhookController.class);
 
     private final RazorpayClient razorpayClient;
+    private final StripeClient stripeClient;
     private final SubscriptionService subscriptionService;
     private final ObjectMapper objectMapper;
 
-    public WebhookController(RazorpayClient razorpayClient, SubscriptionService subscriptionService, ObjectMapper objectMapper) {
+    public WebhookController(RazorpayClient razorpayClient, StripeClient stripeClient,
+                             SubscriptionService subscriptionService, ObjectMapper objectMapper) {
         this.razorpayClient = razorpayClient;
+        this.stripeClient = stripeClient;
         this.subscriptionService = subscriptionService;
         this.objectMapper = objectMapper;
     }
@@ -60,12 +65,48 @@ public class WebhookController {
                 } else {
                     log.warn("Razorpay order.paid event missing businessId/plan notes - ignored");
                 }
+
             }
         } catch (Exception e) {
             // Log and still 200: the signature was valid, so retrying the same payload won't help.
             log.error("Failed to process verified Razorpay webhook", e);
         }
 
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/stripe")
+    public ResponseEntity<Void> stripe(@RequestBody String rawBody,
+                                       @RequestHeader(value = "Stripe-Signature", required = false) String signature) {
+        if (!stripeClient.verifyWebhookSignature(rawBody, signature)) {
+            log.warn("Rejected Stripe webhook with missing/invalid signature");
+            return ResponseEntity.status(401).build();
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(rawBody);
+            String eventType = root.path("type").asText();
+            if ("checkout.session.completed".equals(eventType)
+                    || "checkout.session.async_payment_succeeded".equals(eventType)) {
+                JsonNode session = root.path("data").path("object");
+                JsonNode metadata = session.path("metadata");
+                String businessIdText = metadata.path("businessId").asText(null);
+                String plan = metadata.path("plan").asText(null);
+                String providerSubscriptionId = session.path("subscription").asText(null);
+                String paymentStatus = session.path("payment_status").asText();
+                boolean paid = "paid".equals(paymentStatus) || "no_payment_required".equals(paymentStatus);
+                boolean subscriptionMode = "subscription".equals(session.path("mode").asText());
+                if (businessIdText != null && plan != null && providerSubscriptionId != null
+                        && subscriptionMode && (paid || "checkout.session.async_payment_succeeded".equals(eventType))) {
+                    subscriptionService.applyProviderPlanChange(UUID.fromString(businessIdText), plan,
+                            providerSubscriptionId, SubscriptionProvider.STRIPE);
+                } else {
+                    log.warn("Stripe checkout event is unpaid or missing subscription metadata - ignored");
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to process verified Stripe webhook", e);
+        }
         return ResponseEntity.ok().build();
     }
 }

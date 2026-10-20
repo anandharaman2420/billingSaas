@@ -22,6 +22,9 @@ public class BillableService extends BaseEntity {
     @Column(name = "business_id", nullable = false)
     private UUID businessId;
 
+    @Column(name = "branch_id", nullable = false)
+    private UUID branchId;
+
     @Column(name = "service_name", nullable = false, length = 150)
     private String serviceName;
 

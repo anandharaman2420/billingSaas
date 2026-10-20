@@ -11,10 +11,12 @@ import { ApiError } from '../../../core/models/auth.model';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './register.component.html',
+  styleUrl: './register.component.scss',
 })
 export class RegisterComponent {
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly showPassword = signal(false);
   readonly form: FormGroup;
 
   constructor(
@@ -32,6 +34,10 @@ export class RegisterComponent {
       state: [''],
       gstin: [''],
     });
+  }
+
+  togglePassword(): void {
+    this.showPassword.update((val) => !val);
   }
 
   submit(): void {

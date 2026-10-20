@@ -1,0 +1,2 @@
+ALTER TABLE business_settings
+    ADD COLUMN IF NOT EXISTS invoice_template VARCHAR(20) NOT NULL DEFAULT 'CLASSIC';

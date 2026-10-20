@@ -15,6 +15,12 @@ public interface BillableServiceRepository extends JpaRepository<BillableService
 
     Optional<BillableService> findByIdAndBusinessId(UUID id, UUID businessId);
 
+    Optional<BillableService> findByIdAndBusinessIdAndBranchId(UUID id, UUID businessId, UUID branchId);
+
+    java.util.List<BillableService> findByBusinessIdAndStatus(UUID businessId, ActiveStatus status);
+
+    java.util.List<BillableService> findByBranchIdAndStatus(UUID branchId, ActiveStatus status);
+
     boolean existsByIdAndBusinessId(UUID id, UUID businessId);
 
     @Query("""
@@ -32,4 +38,21 @@ public interface BillableServiceRepository extends JpaRepository<BillableService
                                   @Param("status") ActiveStatus status,
                                   @Param("categoryId") UUID categoryId,
                                   Pageable pageable);
+
+    @Query("""
+            select s from BillableService s
+            where s.businessId = :businessId and s.branchId = :branchId
+              and (:status is null or s.status = :status)
+              and (:categoryId is null or s.categoryId = :categoryId)
+              and (
+                    :keyword is null or :keyword = ''
+                    or lower(s.serviceName) like lower(concat('%', :keyword, '%'))
+                  )
+            """)
+    Page<BillableService> searchByBranch(@Param("businessId") UUID businessId,
+                                          @Param("branchId") UUID branchId,
+                                          @Param("keyword") String keyword,
+                                          @Param("status") ActiveStatus status,
+                                          @Param("categoryId") UUID categoryId,
+                                          Pageable pageable);
 }

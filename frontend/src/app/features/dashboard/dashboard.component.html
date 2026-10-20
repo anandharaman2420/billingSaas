@@ -1,59 +1,107 @@
-<div style="max-width: 960px; margin: 32px auto; padding: 0 16px;">
-  <h1 style="margin-top: 0;">Welcome, {{ authService.currentUser()?.fullName }}</h1>
+<div class="page">
+  <!-- Page header -->
+  <header class="page-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p class="text-muted subtitle">Welcome back, {{ authService.currentUser()?.fullName }}</p>
+    </div>
+    <div class="btn-group">
+      <a routerLink="/pos" class="btn btn-primary">🧾 POS Billing</a>
+      <a routerLink="/invoices/new" class="btn btn-secondary">+ New Invoice</a>
+    </div>
+  </header>
 
-  <div *ngIf="summary() as s" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
-    <div class="card">
-      <div style="color: var(--color-text-muted); font-size: 0.85rem;">Today's sales</div>
-      <div style="font-size: 1.4rem; font-weight: 700;">₹{{ s.todaySales | number: '1.2-2' }}</div>
-    </div>
-    <div class="card">
-      <div style="color: var(--color-text-muted); font-size: 0.85rem;">This month's sales</div>
-      <div style="font-size: 1.4rem; font-weight: 700;">₹{{ s.monthSales | number: '1.2-2' }}</div>
-    </div>
-    <div class="card">
-      <div style="color: var(--color-text-muted); font-size: 0.85rem;">Total sales (all time)</div>
-      <div style="font-size: 1.4rem; font-weight: 700;">₹{{ s.totalSales | number: '1.2-2' }}</div>
-    </div>
-    <div class="card">
-      <div style="color: var(--color-text-muted); font-size: 0.85rem;">Pending payments</div>
-      <div style="font-size: 1.4rem; font-weight: 700; color: var(--color-danger);">₹{{ s.pendingPayments | number: '1.2-2' }}</div>
-    </div>
-    <div class="card">
-      <div style="color: var(--color-text-muted); font-size: 0.85rem;">Paid amount</div>
-      <div style="font-size: 1.4rem; font-weight: 700; color: var(--color-success);">₹{{ s.paidAmount | number: '1.2-2' }}</div>
-    </div>
-    <div class="card">
-      <div style="color: var(--color-text-muted); font-size: 0.85rem;">Bills issued</div>
-      <div style="font-size: 1.4rem; font-weight: 700;">{{ s.invoiceCount }}</div>
-    </div>
-    <div class="card">
-      <div style="color: var(--color-text-muted); font-size: 0.85rem;">Active customers</div>
-      <div style="font-size: 1.4rem; font-weight: 700;">{{ s.customerCount }}</div>
-    </div>
-    <div class="card">
-      <div style="color: var(--color-text-muted); font-size: 0.85rem;">Active products</div>
-      <div style="font-size: 1.4rem; font-weight: 700;">{{ s.productCount }}</div>
+  <!-- Loading state -->
+  <div *ngIf="loading()" class="stats-grid" aria-busy="true" aria-label="Loading dashboard statistics">
+    <div *ngFor="let i of [1,2,3,4,5,6,7]" class="stat-card card">
+      <div class="skeleton skeleton-text skeleton-label"></div>
+      <div class="skeleton skeleton-value"></div>
     </div>
   </div>
 
-  <div *ngIf="loading()" style="text-align: center; padding: 24px; color: var(--color-text-muted);">Loading dashboard…</div>
+  <!-- KPI Stats Grid -->
+  <div *ngIf="summary() as s" class="stats-grid" aria-label="Key performance indicators">
+    <div class="stat-card card">
+      <div class="stat-icon stat-icon--primary" aria-hidden="true">📅</div>
+      <div class="stat-label">Today's Sales</div>
+      <div class="stat-value">₹{{ s.todaySales | number: '1.2-2' }}</div>
+    </div>
 
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-    <a routerLink="/customers" class="card" style="text-decoration: none; color: inherit;">
-      <h3 style="margin: 0 0 4px;">Customers</h3>
-      <p style="margin: 0; color: var(--color-text-muted);">Manage your customer list</p>
-    </a>
-    <a routerLink="/products" class="card" style="text-decoration: none; color: inherit;">
-      <h3 style="margin: 0 0 4px;">Products</h3>
-      <p style="margin: 0; color: var(--color-text-muted);">Manage inventory and pricing</p>
-    </a>
-    <a routerLink="/services" class="card" style="text-decoration: none; color: inherit;">
-      <h3 style="margin: 0 0 4px;">Services</h3>
-      <p style="margin: 0; color: var(--color-text-muted);">Manage billable services</p>
-    </a>
-    <a routerLink="/invoices" class="card" style="text-decoration: none; color: inherit;">
-      <h3 style="margin: 0 0 4px;">Invoices</h3>
-      <p style="margin: 0; color: var(--color-text-muted);">Create and manage invoices</p>
-    </a>
+    <div class="stat-card card">
+      <div class="stat-icon stat-icon--info" aria-hidden="true">📆</div>
+      <div class="stat-label">This Month's Sales</div>
+      <div class="stat-value">₹{{ s.monthSales | number: '1.2-2' }}</div>
+    </div>
+
+    <div class="stat-card card">
+      <div class="stat-icon stat-icon--success" aria-hidden="true">💰</div>
+      <div class="stat-label">Total Sales (All Time)</div>
+      <div class="stat-value stat-value--success">₹{{ s.totalSales | number: '1.2-2' }}</div>
+    </div>
+
+    <div class="stat-card card">
+      <div class="stat-icon stat-icon--danger" aria-hidden="true">⏳</div>
+      <div class="stat-label">Pending Payments</div>
+      <div class="stat-value stat-value--danger">₹{{ s.pendingPayments | number: '1.2-2' }}</div>
+    </div>
+
+    <div class="stat-card card">
+      <div class="stat-icon stat-icon--success" aria-hidden="true">✅</div>
+      <div class="stat-label">Amount Collected</div>
+      <div class="stat-value stat-value--success">₹{{ s.paidAmount | number: '1.2-2' }}</div>
+    </div>
+
+    <div class="stat-card card">
+      <div class="stat-icon stat-icon--primary" aria-hidden="true">📄</div>
+      <div class="stat-label">Bills Issued</div>
+      <div class="stat-value">{{ s.invoiceCount }}</div>
+    </div>
+
+    <div class="stat-card card">
+      <div class="stat-icon stat-icon--info" aria-hidden="true">👥</div>
+      <div class="stat-label">Active Customers</div>
+      <div class="stat-value">{{ s.customerCount }}</div>
+    </div>
+
+    <div class="stat-card card">
+      <div class="stat-icon stat-icon--warning" aria-hidden="true">📦</div>
+      <div class="stat-label">Active Products</div>
+      <div class="stat-value">{{ s.productCount }}</div>
+    </div>
   </div>
+
+  <!-- Quick Actions -->
+  <section class="page-section" aria-labelledby="quick-actions-heading">
+    <h2 class="section-title" id="quick-actions-heading">Quick Actions</h2>
+    <div class="quick-actions-grid">
+      <a routerLink="/customers" class="quick-action-card card" aria-label="Manage customers">
+        <span class="quick-action-icon" aria-hidden="true">👥</span>
+        <div>
+          <div class="quick-action-title">Customers</div>
+          <div class="quick-action-desc">View and manage your customer list</div>
+        </div>
+      </a>
+      <a routerLink="/products" class="quick-action-card card" aria-label="Manage products">
+        <span class="quick-action-icon" aria-hidden="true">📦</span>
+        <div>
+          <div class="quick-action-title">Products</div>
+          <div class="quick-action-desc">Manage inventory and pricing</div>
+        </div>
+      </a>
+      <a routerLink="/services" class="quick-action-card card" aria-label="Manage services">
+        <span class="quick-action-icon" aria-hidden="true">🔧</span>
+        <div>
+          <div class="quick-action-title">Services</div>
+          <div class="quick-action-desc">Manage billable services</div>
+        </div>
+      </a>
+      <a routerLink="/invoices" class="quick-action-card card" aria-label="Manage invoices">
+        <span class="quick-action-icon" aria-hidden="true">📄</span>
+        <div>
+          <div class="quick-action-title">Invoices</div>
+          <div class="quick-action-desc">Create and manage GST invoices</div>
+        </div>
+      </a>
+    </div>
+  </section>
 </div>

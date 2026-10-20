@@ -41,4 +41,21 @@ public interface InvoiceItemRepository extends JpaRepository<InvoiceItem, UUID> 
                                               @Param("fromDate") LocalDate fromDate,
                                               @Param("toDate") LocalDate toDate,
                                               Pageable pageable);
+
+    @Query("""
+            select i.productId as productId, i.itemName as itemName,
+                   sum(i.quantity) as totalQuantity, sum(i.lineTotal) as totalAmount
+            from InvoiceItem i
+            where i.invoice.branchId = :branchId
+              and i.itemType = com.saasbilling.entity.InvoiceItemType.PRODUCT
+              and i.invoice.status <> com.saasbilling.entity.InvoiceStatus.DRAFT
+              and i.invoice.status <> com.saasbilling.entity.InvoiceStatus.CANCELLED
+              and i.invoice.invoiceDate >= :fromDate and i.invoice.invoiceDate <= :toDate
+            group by i.productId, i.itemName
+            order by sum(i.lineTotal) desc
+            """)
+    List<ProductSalesRow> topSellingProductsByBranch(@Param("branchId") UUID branchId,
+                                                      @Param("fromDate") LocalDate fromDate,
+                                                      @Param("toDate") LocalDate toDate,
+                                                      Pageable pageable);
 }

@@ -19,6 +19,7 @@ export interface InvoiceItem {
 export interface Invoice {
   id: string;
   invoiceNumber: string | null;
+  invoiceType?: 'STANDARD' | 'POS';
   invoiceDate: string;
   dueDate: string | null;
   status: InvoiceStatus;
@@ -46,6 +47,7 @@ export interface Invoice {
 export interface InvoiceSummary {
   id: string;
   invoiceNumber: string | null;
+  invoiceType?: 'STANDARD' | 'POS';
   invoiceDate: string;
   dueDate: string | null;
   status: InvoiceStatus;

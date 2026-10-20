@@ -14,6 +14,8 @@ public interface BusinessSettingsRepository extends JpaRepository<BusinessSettin
 
     Optional<BusinessSettings> findByBusinessId(UUID businessId);
 
+    Optional<BusinessSettings> findByBranchId(UUID branchId);
+
     /**
      * Row-level lock (SELECT ... FOR UPDATE) on the business's settings
      * row. Used exclusively by invoice-number generation: the caller
@@ -26,4 +28,8 @@ public interface BusinessSettingsRepository extends JpaRepository<BusinessSettin
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from BusinessSettings s where s.business.id = :businessId")
     Optional<BusinessSettings> findByBusinessIdForUpdate(@Param("businessId") UUID businessId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from BusinessSettings s where s.branchId = :branchId")
+    Optional<BusinessSettings> findByBranchIdForUpdate(@Param("branchId") UUID branchId);
 }

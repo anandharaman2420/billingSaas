@@ -2,6 +2,7 @@ package com.saasbilling.storage;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -18,6 +19,9 @@ public interface FileStorageService {
 
     /** Stores the file scoped by business id + logical category and returns a URL the frontend can use directly. */
     StoredFile store(UUID businessId, String category, MultipartFile file);
+
+    /** Reads a previously stored tenant-scoped file, if it still exists. */
+    Optional<byte[]> read(UUID businessId, String category, String fileName);
 
     record StoredFile(String url, String storedFileName, long sizeBytes, String contentType) {
     }

@@ -30,10 +30,12 @@ public class ProductService {
     @Transactional
     public ProductResponse create(ProductRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
-        assertSkuNotDuplicate(businessId, request.sku(), null);
+        UUID branchId = TenantContext.currentBranchId();
+        assertSkuNotDuplicate(branchId, request.sku(), null);
 
         Product product = new Product();
         product.setBusinessId(businessId);
+        product.setBranchId(branchId);
         applyRequest(product, request);
         product = productRepository.save(product);
 
@@ -46,8 +48,8 @@ public class ProductService {
     @Transactional
     public ProductResponse update(UUID id, ProductRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
-        Product product = getOwnedOrThrow(id, businessId);
-        assertSkuNotDuplicate(businessId, request.sku(), id);
+        Product product = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
+        assertSkuNotDuplicate(product.getBranchId(), request.sku(), id);
 
         applyRequest(product, request);
         product = productRepository.save(product);
@@ -60,25 +62,27 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public ProductResponse getById(UUID id) {
-        return ProductResponse.from(getOwnedOrThrow(id, TenantContext.currentBusinessId()));
+        return ProductResponse.from(getOwnedOrThrow(id, TenantContext.currentBusinessId(), TenantContext.currentBranchId()));
     }
 
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> search(String keyword, ActiveStatus status, UUID categoryId, Pageable pageable) {
-        Page<Product> page = productRepository.search(TenantContext.currentBusinessId(), keyword, status, categoryId, pageable);
+        Page<Product> page = productRepository.searchByBranch(TenantContext.currentBusinessId(),
+                TenantContext.currentBranchId(), keyword, status, categoryId, pageable);
         return PageResponse.from(page.map(ProductResponse::from));
     }
 
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> lowStock(Pageable pageable) {
-        Page<Product> page = productRepository.findLowStock(TenantContext.currentBusinessId(), pageable);
+        Page<Product> page = productRepository.findLowStockByBranch(TenantContext.currentBusinessId(),
+                TenantContext.currentBranchId(), pageable);
         return PageResponse.from(page.map(ProductResponse::from));
     }
 
     @Transactional
     public void deactivate(UUID id) {
         UUID businessId = TenantContext.currentBusinessId();
-        Product product = getOwnedOrThrow(id, businessId);
+        Product product = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
         product.setStatus(ActiveStatus.INACTIVE);
         productRepository.save(product);
 
@@ -89,7 +93,7 @@ public class ProductService {
     @Transactional
     public void reactivate(UUID id) {
         UUID businessId = TenantContext.currentBusinessId();
-        Product product = getOwnedOrThrow(id, businessId);
+        Product product = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
         product.setStatus(ActiveStatus.ACTIVE);
         productRepository.save(product);
 
@@ -98,18 +102,18 @@ public class ProductService {
     }
 
     // -----------------------------------------------------------------
-    private Product getOwnedOrThrow(UUID id, UUID businessId) {
-        return productRepository.findByIdAndBusinessId(id, businessId)
+    private Product getOwnedOrThrow(UUID id, UUID businessId, UUID branchId) {
+        return productRepository.findByIdAndBusinessIdAndBranchId(id, businessId, branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
     }
 
-    private void assertSkuNotDuplicate(UUID businessId, String sku, UUID excludingId) {
+    private void assertSkuNotDuplicate(UUID branchId, String sku, UUID excludingId) {
         if (sku == null || sku.isBlank()) {
             return;
         }
         boolean duplicate = (excludingId == null)
-                ? productRepository.existsByBusinessIdAndSkuIgnoreCase(businessId, sku)
-                : productRepository.existsByBusinessIdAndSkuIgnoreCaseAndIdNot(businessId, sku, excludingId);
+                ? productRepository.existsByBranchIdAndSkuIgnoreCase(branchId, sku)
+                : productRepository.existsByBranchIdAndSkuIgnoreCaseAndIdNot(branchId, sku, excludingId);
 
         if (duplicate) {
             throw new DuplicateResourceException("A product with SKU '" + sku + "' already exists");

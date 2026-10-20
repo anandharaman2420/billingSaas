@@ -18,9 +18,12 @@ public class BusinessSettings extends BaseEntity {
     @GeneratedValue
     private UUID id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "business_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "business_id", nullable = false)
     private Business business;
+
+    @Column(name = "branch_id", nullable = false, unique = true)
+    private UUID branchId;
 
     @Column(name = "invoice_prefix", nullable = false, length = 20)
     private String invoicePrefix = "INV";
@@ -30,6 +33,18 @@ public class BusinessSettings extends BaseEntity {
 
     @Column(name = "invoice_next_sequence", nullable = false)
     private long invoiceNextSequence = 1L;
+
+    @Column(name = "invoice_template", nullable = false, length = 20)
+    private String invoiceTemplate = "CLASSIC";
+
+    @Column(name = "pos_prefix", nullable = false, length = 20)
+    private String posPrefix = "BILL";
+
+    @Column(name = "pos_number_format", nullable = false, length = 50)
+    private String posNumberFormat = "{PREFIX}-{YEAR}-{SEQ:00000}";
+
+    @Column(name = "pos_next_sequence", nullable = false)
+    private long posNextSequence = 1L;
 
     @Column(name = "financial_year_start_month", nullable = false)
     private short financialYearStartMonth = 4;

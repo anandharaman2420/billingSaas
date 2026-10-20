@@ -32,6 +32,7 @@ public class BillableServiceService {
 
         BillableService service = new BillableService();
         service.setBusinessId(businessId);
+        service.setBranchId(TenantContext.currentBranchId());
         applyRequest(service, request);
         service = serviceRepository.save(service);
 
@@ -44,7 +45,7 @@ public class BillableServiceService {
     @Transactional
     public ServiceResponse update(UUID id, ServiceRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
-        BillableService service = getOwnedOrThrow(id, businessId);
+        BillableService service = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
 
         applyRequest(service, request);
         service = serviceRepository.save(service);
@@ -57,19 +58,20 @@ public class BillableServiceService {
 
     @Transactional(readOnly = true)
     public ServiceResponse getById(UUID id) {
-        return ServiceResponse.from(getOwnedOrThrow(id, TenantContext.currentBusinessId()));
+        return ServiceResponse.from(getOwnedOrThrow(id, TenantContext.currentBusinessId(), TenantContext.currentBranchId()));
     }
 
     @Transactional(readOnly = true)
     public PageResponse<ServiceResponse> search(String keyword, ActiveStatus status, UUID categoryId, Pageable pageable) {
-        Page<BillableService> page = serviceRepository.search(TenantContext.currentBusinessId(), keyword, status, categoryId, pageable);
+        Page<BillableService> page = serviceRepository.searchByBranch(TenantContext.currentBusinessId(),
+                TenantContext.currentBranchId(), keyword, status, categoryId, pageable);
         return PageResponse.from(page.map(ServiceResponse::from));
     }
 
     @Transactional
     public void deactivate(UUID id) {
         UUID businessId = TenantContext.currentBusinessId();
-        BillableService service = getOwnedOrThrow(id, businessId);
+        BillableService service = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
         service.setStatus(ActiveStatus.INACTIVE);
         serviceRepository.save(service);
 
@@ -80,7 +82,7 @@ public class BillableServiceService {
     @Transactional
     public void reactivate(UUID id) {
         UUID businessId = TenantContext.currentBusinessId();
-        BillableService service = getOwnedOrThrow(id, businessId);
+        BillableService service = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
         service.setStatus(ActiveStatus.ACTIVE);
         serviceRepository.save(service);
 
@@ -89,8 +91,8 @@ public class BillableServiceService {
     }
 
     // -----------------------------------------------------------------
-    private BillableService getOwnedOrThrow(UUID id, UUID businessId) {
-        return serviceRepository.findByIdAndBusinessId(id, businessId)
+    private BillableService getOwnedOrThrow(UUID id, UUID businessId, UUID branchId) {
+        return serviceRepository.findByIdAndBusinessIdAndBranchId(id, businessId, branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
     }
 

@@ -12,6 +12,7 @@ import java.util.UUID;
 public record InvoiceResponse(
         UUID id,
         String invoiceNumber,
+        String invoiceType,
         LocalDate invoiceDate,
         LocalDate dueDate,
         String status,
@@ -60,7 +61,9 @@ public record InvoiceResponse(
 
     public static InvoiceResponse from(Invoice invoice) {
         return new InvoiceResponse(
-                invoice.getId(), invoice.getInvoiceNumber(), invoice.getInvoiceDate(), invoice.getDueDate(),
+                invoice.getId(), invoice.getInvoiceNumber(),
+                invoice.getInvoiceType() != null ? invoice.getInvoiceType().name() : "STANDARD",
+                invoice.getInvoiceDate(), invoice.getDueDate(),
                 invoice.getStatus().name(), invoice.getCustomerId(),
                 invoice.getItems().stream().map(Item::from).toList(),
                 invoice.getSubtotal(), invoice.getItemDiscountTotal(), invoice.getAdditionalDiscountAmount(),
@@ -74,6 +77,7 @@ public record InvoiceResponse(
     public record Summary(
             UUID id,
             String invoiceNumber,
+            String invoiceType,
             LocalDate invoiceDate,
             LocalDate dueDate,
             String status,
@@ -84,7 +88,9 @@ public record InvoiceResponse(
     ) {
         public static Summary from(Invoice invoice) {
             return new Summary(
-                    invoice.getId(), invoice.getInvoiceNumber(), invoice.getInvoiceDate(), invoice.getDueDate(),
+                    invoice.getId(), invoice.getInvoiceNumber(),
+                    invoice.getInvoiceType() != null ? invoice.getInvoiceType().name() : "STANDARD",
+                    invoice.getInvoiceDate(), invoice.getDueDate(),
                     invoice.getStatus().name(), invoice.getCustomerId(), invoice.getGrandTotal(),
                     invoice.getAmountPaid(), invoice.getBalanceDue());
         }

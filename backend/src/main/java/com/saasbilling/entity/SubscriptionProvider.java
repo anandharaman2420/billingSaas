@@ -1,10 +1,6 @@
 package com.saasbilling.entity;
 
-/**
- * MANUAL is the only provider implemented right now (see V8 migration
- * comment). RAZORPAY/STRIPE are reserved for a future real gateway
- * integration.
- */
+/** Payment source used to activate a business subscription. */
 public enum SubscriptionProvider {
     MANUAL,
     RAZORPAY,

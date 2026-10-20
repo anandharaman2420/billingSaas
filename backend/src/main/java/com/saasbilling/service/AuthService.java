@@ -7,6 +7,7 @@ import com.saasbilling.exception.DuplicateResourceException;
 import com.saasbilling.exception.ResourceNotFoundException;
 import com.saasbilling.repository.BusinessRepository;
 import com.saasbilling.repository.BusinessSettingsRepository;
+import com.saasbilling.repository.BranchRepository;
 import com.saasbilling.repository.CategoryRepository;
 import com.saasbilling.repository.RefreshTokenRepository;
 import com.saasbilling.repository.UserRepository;
@@ -36,6 +37,7 @@ public class AuthService {
     private final BusinessRepository businessRepository;
     private final UserRepository userRepository;
     private final BusinessSettingsRepository businessSettingsRepository;
+    private final BranchRepository branchRepository;
     private final CategoryRepository categoryRepository;
     private final com.saasbilling.repository.SubscriptionRepository subscriptionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -50,7 +52,8 @@ public class AuthService {
     public AuthService(BusinessRepository businessRepository,
                         UserRepository userRepository,
                         BusinessSettingsRepository businessSettingsRepository,
-                        CategoryRepository categoryRepository,
+    BranchRepository branchRepository,
+    CategoryRepository categoryRepository,
                         com.saasbilling.repository.SubscriptionRepository subscriptionRepository,
                         RefreshTokenRepository refreshTokenRepository,
                         PasswordEncoder passwordEncoder,
@@ -60,6 +63,7 @@ public class AuthService {
         this.businessRepository = businessRepository;
         this.userRepository = userRepository;
         this.businessSettingsRepository = businessSettingsRepository;
+        this.branchRepository = branchRepository;
         this.categoryRepository = categoryRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -108,8 +112,23 @@ public class AuthService {
         owner.setStatus(UserStatus.ACTIVE);
         owner = userRepository.save(owner);
 
+        Branch branch = new Branch();
+        branch.setBusinessId(business.getId());
+        branch.setBranchName("Main Branch");
+        branch.setAddressLine(business.getAddressLine());
+        branch.setCity(business.getCity());
+        branch.setState(business.getState());
+        branch.setPincode(business.getPincode());
+        branch.setCountry(business.getCountry());
+        branch.setPhone(business.getPhone());
+        branch.setEmail(business.getEmail());
+        branch.setGstin(business.getGstin());
+        branch.setDefaultBranch(true);
+        branch = branchRepository.save(branch);
+
         BusinessSettings settings = new BusinessSettings();
         settings.setBusiness(business);
+        settings.setBranchId(branch.getId());
         businessSettingsRepository.save(settings);
 
         seedDefaultExpenseCategories(business.getId());

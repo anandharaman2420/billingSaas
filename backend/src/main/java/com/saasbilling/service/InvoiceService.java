@@ -40,6 +40,7 @@ public class InvoiceService {
     private final BillableServiceRepository serviceRepository;
     private final BusinessSettingsRepository businessSettingsRepository;
     private final BusinessRepository businessRepository;
+    private final BranchRepository branchRepository;
     private final AuditLogService auditLogService;
     private final com.saasbilling.pdf.InvoicePdfService invoicePdfService;
     private final com.saasbilling.notification.EmailService emailService;
@@ -50,6 +51,7 @@ public class InvoiceService {
                            BillableServiceRepository serviceRepository,
                            BusinessSettingsRepository businessSettingsRepository,
                            BusinessRepository businessRepository,
+                           BranchRepository branchRepository,
                            AuditLogService auditLogService,
                            com.saasbilling.pdf.InvoicePdfService invoicePdfService,
                            com.saasbilling.notification.EmailService emailService) {
@@ -59,6 +61,7 @@ public class InvoiceService {
         this.serviceRepository = serviceRepository;
         this.businessSettingsRepository = businessSettingsRepository;
         this.businessRepository = businessRepository;
+        this.branchRepository = branchRepository;
         this.auditLogService = auditLogService;
         this.invoicePdfService = invoicePdfService;
         this.emailService = emailService;
@@ -70,12 +73,13 @@ public class InvoiceService {
     @Transactional
     public InvoiceResponse create(InvoiceRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
-
-        Customer customer = customerRepository.findByIdAndBusinessId(request.customerId(), businessId)
+        UUID branchId = TenantContext.currentBranchId();
+        Customer customer = customerRepository.findByIdAndBusinessIdAndBranchId(request.customerId(), businessId, branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
 
         Invoice invoice = new Invoice();
         invoice.setBusinessId(businessId);
+        invoice.setBranchId(branchId);
         invoice.setCustomerId(customer.getId());
         invoice.setStatus(InvoiceStatus.DRAFT);
         applyMutableFields(invoice, request, businessId);
@@ -104,7 +108,8 @@ public class InvoiceService {
             throw new ForbiddenOperationException("Only draft invoices can be edited. Cancel and recreate instead.");
         }
 
-        Customer customer = customerRepository.findByIdAndBusinessId(request.customerId(), businessId)
+        Customer customer = customerRepository.findByIdAndBusinessIdAndBranchId(
+                        request.customerId(), businessId, TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
 
         invoice.setCustomerId(customer.getId());
@@ -126,6 +131,15 @@ public class InvoiceService {
     // -----------------------------------------------------------------
     @Transactional
     public InvoiceResponse issue(UUID id) {
+        return issueInternal(id, InvoiceType.STANDARD);
+    }
+
+    @Transactional
+    public InvoiceResponse issuePos(UUID id) {
+        return issueInternal(id, InvoiceType.POS);
+    }
+
+    private InvoiceResponse issueInternal(UUID id, InvoiceType type) {
         UUID businessId = TenantContext.currentBusinessId();
         Invoice invoice = getOwnedWithItemsOrThrow(id, businessId);
 
@@ -138,11 +152,17 @@ public class InvoiceService {
 
         assertWithinMonthlyInvoiceLimit(businessId);
 
-        invoice.setInvoiceNumber(generateNextInvoiceNumber(businessId));
+        invoice.setInvoiceType(type);
+        if (type == InvoiceType.POS) {
+            invoice.setInvoiceNumber(generateNextPosBillNumber(businessId));
+        } else {
+            invoice.setInvoiceNumber(generateNextInvoiceNumber(businessId));
+        }
         invoice.setStatus(InvoiceStatus.ISSUED);
         invoice = invoiceRepository.save(invoice);
 
-        auditLogService.record(businessId, TenantContext.currentUserId(), "INVOICE_ISSUED",
+        auditLogService.record(businessId, TenantContext.currentUserId(),
+                type == InvoiceType.POS ? "POS_BILL_ISSUED" : "INVOICE_ISSUED",
                 "INVOICE", invoice.getId(), null, null);
 
         return InvoiceResponse.from(invoice);
@@ -187,7 +207,8 @@ public class InvoiceService {
             throw new ForbiddenOperationException("Issue the invoice before emailing it to the customer");
         }
 
-        Customer customer = customerRepository.findByIdAndBusinessId(invoice.getCustomerId(), businessId)
+        Customer customer = customerRepository.findByIdAndBusinessIdAndBranchId(
+                        invoice.getCustomerId(), businessId, invoice.getBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
 
         if (customer.getEmail() == null || customer.getEmail().isBlank()) {
@@ -214,8 +235,9 @@ public class InvoiceService {
     @Transactional(readOnly = true)
     public PageResponse<InvoiceResponse.Summary> search(String keyword, InvoiceStatus status, UUID customerId,
                                                           LocalDate fromDate, LocalDate toDate, Pageable pageable) {
-        Page<Invoice> page = invoiceRepository.search(
-                TenantContext.currentBusinessId(), keyword, status, customerId, fromDate, toDate, pageable);
+        Page<Invoice> page = invoiceRepository.searchByBranch(
+                TenantContext.currentBusinessId(), TenantContext.currentBranchId(), keyword, status,
+                customerId, fromDate, toDate, pageable);
         return PageResponse.from(page.map(InvoiceResponse.Summary::from));
     }
 
@@ -226,15 +248,18 @@ public class InvoiceService {
     }
 
     // -----------------------------------------------------------------
-    // Invoice numbering - concurrency-safe via a pessimistic row lock
-    // on business_settings (see BusinessSettingsRepository#findByBusinessIdForUpdate).
+    // Invoice and POS Bill numbering - concurrency-safe via a pessimistic
+    // row lock on business_settings.
     // -----------------------------------------------------------------
     private String generateNextInvoiceNumber(UUID businessId) {
-        BusinessSettings settings = businessSettingsRepository.findByBusinessIdForUpdate(businessId)
+        BusinessSettings settings = businessSettingsRepository.findByBranchIdForUpdate(TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Business settings not found"));
 
         long sequence = settings.getInvoiceNextSequence();
-        String number = formatInvoiceNumber(settings, sequence);
+        String format = settings.getInvoiceNumberFormat();
+        String prefix = settings.getInvoicePrefix();
+
+        String number = formatNumber(format, prefix, sequence);
 
         settings.setInvoiceNextSequence(sequence + 1);
         businessSettingsRepository.save(settings);
@@ -242,27 +267,60 @@ public class InvoiceService {
         return number;
     }
 
+    private String generateNextPosBillNumber(UUID businessId) {
+        BusinessSettings settings = businessSettingsRepository.findByBranchIdForUpdate(TenantContext.currentBranchId())
+                .orElseThrow(() -> new ResourceNotFoundException("Business settings not found"));
+
+        long sequence = settings.getPosNextSequence();
+        String format = settings.getPosNumberFormat();
+        String prefix = settings.getPosPrefix();
+
+        String number = formatNumber(format, prefix, sequence);
+
+        settings.setPosNextSequence(sequence + 1);
+        businessSettingsRepository.save(settings);
+
+        return number;
+    }
+
     /**
-     * Supports the {PREFIX}, {YEAR}, and {SEQ:00000}-style placeholders
-     * described in business_settings.invoice_number_format (spec section 13).
-     * {YEAR} is the calendar year the invoice is issued in; financial-year
-     * labels (e.g. "2025-26") can be added here later without touching callers.
+     * Supports placeholders:
+     * - {PREFIX} -> replaced with invoicePrefix or posPrefix (e.g. INV, BILL)
+     * - {YEAR} or YYYY -> current 4-digit calendar year (e.g. 2026)
+     * - {SEQ:00000} or {SEQ} or 00001 -> zero-padded sequence (e.g. 00001, 00003)
      */
-    private String formatInvoiceNumber(BusinessSettings settings, long sequence) {
-        String format = settings.getInvoiceNumberFormat();
+    private String formatNumber(String format, String prefix, long sequence) {
+        if (format == null || format.isBlank()) {
+            format = "{PREFIX}-{YEAR}-{SEQ:00000}";
+        }
+        if (prefix == null || prefix.isBlank()) {
+            prefix = "INV";
+        }
+
         String year = String.valueOf(LocalDate.now().getYear());
 
         String result = format
-                .replace("{PREFIX}", settings.getInvoicePrefix())
-                .replace("{YEAR}", year);
+                .replace("{PREFIX}", prefix)
+                .replace("{YEAR}", year)
+                .replace("YYYY", year);
 
         java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\{SEQ:(0+)}").matcher(result);
         if (matcher.find()) {
             int width = matcher.group(1).length();
             String padded = String.format("%0" + width + "d", sequence);
             result = matcher.replaceAll(padded);
+        } else if (result.contains("{SEQ}")) {
+            String padded = String.format("%05d", sequence);
+            result = result.replace("{SEQ}", padded);
         } else {
-            result = result + sequence; // fallback if the format string was misconfigured
+            java.util.regex.Matcher numMatcher = java.util.regex.Pattern.compile("(0{3,}[0-9]*)").matcher(result);
+            if (numMatcher.find()) {
+                int width = numMatcher.group(1).length();
+                String padded = String.format("%0" + width + "d", sequence);
+                result = numMatcher.replaceFirst(padded);
+            } else {
+                result = result + "-" + String.format("%05d", sequence);
+            }
         }
         return result;
     }
@@ -348,7 +406,8 @@ public class InvoiceService {
         BigDecimal taxRate;
 
         if (hasProduct) {
-            Product product = productRepository.findByIdAndBusinessId(request.productId(), businessId)
+            Product product = productRepository.findByIdAndBusinessIdAndBranchId(
+                            request.productId(), businessId, TenantContext.currentBranchId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
             if (product.getStatus() != ActiveStatus.ACTIVE) {
                 throw new ForbiddenOperationException("Product '" + product.getProductName() + "' is not active");
@@ -360,7 +419,8 @@ public class InvoiceService {
             unitPrice = product.getSellingPrice();
             taxRate = product.getTaxRatePercent();
         } else {
-            BillableService service = serviceRepository.findByIdAndBusinessId(request.serviceId(), businessId)
+            BillableService service = serviceRepository.findByIdAndBusinessIdAndBranchId(
+                            request.serviceId(), businessId, TenantContext.currentBranchId())
                     .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
             if (service.getStatus() != ActiveStatus.ACTIVE) {
                 throw new ForbiddenOperationException("Service '" + service.getServiceName() + "' is not active");
@@ -394,11 +454,12 @@ public class InvoiceService {
     }
 
     private boolean isSameState(UUID businessId, Customer customer) {
-        Business business = businessRepository.findById(businessId).orElse(null);
-        if (business == null || business.getState() == null || customer.getState() == null) {
+        Branch branch = branchRepository.findByIdAndBusinessIdAndStatus(
+                TenantContext.currentBranchId(), businessId, "ACTIVE").orElse(null);
+        if (branch == null || branch.getState() == null || customer.getState() == null) {
             return false;
         }
-        return business.getState().trim().equalsIgnoreCase(customer.getState().trim());
+        return branch.getState().trim().equalsIgnoreCase(customer.getState().trim());
     }
 
     /** Spec section 37: plan limits are checked at issue time, since a DRAFT hasn't consumed anything yet. */
@@ -421,7 +482,7 @@ public class InvoiceService {
 
         LocalDate dueDate = request.dueDate();
         if (dueDate == null) {
-            int defaultDueDays = businessSettingsRepository.findByBusinessId(businessId)
+            int defaultDueDays = businessSettingsRepository.findByBranchId(TenantContext.currentBranchId())
                     .map(BusinessSettings::getDefaultDueDays).orElse(7);
             dueDate = request.invoiceDate().plusDays(defaultDueDays);
         }
@@ -440,7 +501,8 @@ public class InvoiceService {
      */
     @Transactional
     public void applyAmountPaid(UUID invoiceId, UUID businessId, BigDecimal amountPaid) {
-        Invoice invoice = invoiceRepository.findByIdAndBusinessId(invoiceId, businessId)
+        Invoice invoice = invoiceRepository.findByIdAndBusinessIdAndBranchId(
+                        invoiceId, businessId, TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
 
         invoice.setAmountPaid(amountPaid);
@@ -466,7 +528,7 @@ public class InvoiceService {
 
     // -----------------------------------------------------------------
     private Invoice getOwnedWithItemsOrThrow(UUID id, UUID businessId) {
-        return invoiceRepository.findWithItemsByIdAndBusinessId(id, businessId)
+        return invoiceRepository.findWithItemsByIdAndBusinessIdAndBranchId(id, businessId, TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
     }
 }

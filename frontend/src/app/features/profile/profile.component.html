@@ -1,53 +1,59 @@
-<div style="max-width: 480px; margin: 32px auto;">
-  <h1>My profile</h1>
+<div class="page page-sm">
+  <header class="page-header">
+    <h1>My Profile</h1>
+  </header>
 
   <div class="card" style="margin-bottom: 24px;">
-    <h2 style="margin-top: 0;">Profile details</h2>
-    <div class="alert-error" *ngIf="profileError()">{{ profileError() }}</div>
-    <p *ngIf="profileSaved()" style="color: var(--color-success);">Saved.</p>
+    <h2 style="margin-top: 0; font-size: 16px; font-weight: 600;">Personal Information</h2>
+    <div class="alert-error" *ngIf="profileError()" role="alert">{{ profileError() }}</div>
+    <div class="alert-success" *ngIf="profileSaved()" role="status">✅ Profile details updated successfully.</div>
 
     <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
       <div class="form-field">
-        <label>Full name *</label>
-        <input formControlName="fullName" />
+        <label class="form-label">Full Name *</label>
+        <input formControlName="fullName" placeholder="Your full name" />
       </div>
       <div class="form-field">
-        <label>Phone</label>
-        <input formControlName="phone" />
+        <label class="form-label">Phone</label>
+        <input formControlName="phone" placeholder="Your phone number" />
       </div>
-      <div class="form-field">
-        <label>Email</label>
-        <input [value]="authService.currentUser()?.email" disabled />
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Email</label>
+          <input [value]="authService.currentUser()?.email" disabled />
+          <span class="form-hint">Email cannot be changed directly</span>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Role</label>
+          <input [value]="authService.currentUser()?.role" disabled />
+          <span class="form-hint">Assigned role in organization</span>
+        </div>
       </div>
-      <div class="form-field">
-        <label>Role</label>
-        <input [value]="authService.currentUser()?.role" disabled />
-      </div>
-      <button type="submit" class="btn-primary" [disabled]="profileLoading()">
-        {{ profileLoading() ? 'Saving…' : 'Save profile' }}
+      <button type="submit" class="btn btn-primary" [disabled]="profileLoading()" style="margin-top: 8px;">
+        {{ profileLoading() ? 'Saving…' : 'Save Profile' }}
       </button>
     </form>
   </div>
 
   <div class="card">
-    <h2 style="margin-top: 0;">Change password</h2>
-    <div class="alert-error" *ngIf="passwordError()">{{ passwordError() }}</div>
-    <p *ngIf="passwordSaved()" style="color: var(--color-success);">Password changed.</p>
+    <h2 style="margin-top: 0; font-size: 16px; font-weight: 600;">Change Password</h2>
+    <div class="alert-error" *ngIf="passwordError()" role="alert">{{ passwordError() }}</div>
+    <div class="alert-success" *ngIf="passwordSaved()" role="status">✅ Password changed successfully.</div>
 
     <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
       <div class="form-field">
-        <label>Current password *</label>
-        <input formControlName="currentPassword" type="password" autocomplete="current-password" />
+        <label class="form-label">Current Password *</label>
+        <input formControlName="currentPassword" type="password" autocomplete="current-password" placeholder="Enter current password" />
       </div>
       <div class="form-field">
-        <label>New password *</label>
-        <input formControlName="newPassword" type="password" autocomplete="new-password" />
+        <label class="form-label">New Password *</label>
+        <input formControlName="newPassword" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" />
         <span class="form-error" *ngIf="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.invalid">
-          Minimum 8 characters
+          Minimum 8 characters required
         </span>
       </div>
-      <button type="submit" class="btn-primary" [disabled]="passwordLoading()">
-        {{ passwordLoading() ? 'Saving…' : 'Change password' }}
+      <button type="submit" class="btn btn-primary" [disabled]="passwordLoading()" style="margin-top: 8px;">
+        {{ passwordLoading() ? 'Saving…' : 'Update Password' }}
       </button>
     </form>
   </div>

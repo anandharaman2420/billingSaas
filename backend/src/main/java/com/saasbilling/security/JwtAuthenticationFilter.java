@@ -1,5 +1,6 @@
 package com.saasbilling.security;
 
+import com.saasbilling.repository.BranchRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -31,9 +32,11 @@ import java.util.UUID;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final BranchRepository branchRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, BranchRepository branchRepository) {
         this.jwtService = jwtService;
+        this.branchRepository = branchRepository;
     }
 
     @Override
@@ -60,8 +63,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UUID businessId = UUID.fromString(claims.get("businessId", String.class));
             String email = claims.get("email", String.class);
             String role = claims.get("role", String.class);
+            String branchHeader = request.getHeader("X-Branch-Id");
+            UUID branchId;
+            if (branchHeader == null || branchHeader.isBlank()) {
+                branchId = branchRepository.findFirstByBusinessIdAndDefaultBranchTrue(businessId)
+                        .orElseThrow(() -> new IllegalStateException("Business has no default branch")).getId();
+            } else {
+                try {
+                    branchId = UUID.fromString(branchHeader);
+                } catch (IllegalArgumentException e) {
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid branch id");
+                    return;
+                }
+            }
+            if (!branchRepository.existsByIdAndBusinessIdAndStatus(branchId, businessId, "ACTIVE")) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Selected branch is not available");
+                return;
+            }
 
-            TenantContext.set(new TenantContext.AuthenticatedPrincipal(userId, businessId, email, role));
+            TenantContext.set(new TenantContext.AuthenticatedPrincipal(userId, businessId, email, role, branchId));
 
             var authentication = new UsernamePasswordAuthenticationToken(
                     email,

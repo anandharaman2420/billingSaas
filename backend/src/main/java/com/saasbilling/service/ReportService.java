@@ -42,7 +42,8 @@ public class ReportService {
     @Transactional(readOnly = true)
     public SalesReport salesReport(LocalDate fromDate, LocalDate toDate) {
         UUID businessId = TenantContext.currentBusinessId();
-        var rows = invoiceRepository.dailySalesInRange(businessId, fromDate, toDate);
+        UUID branchId = TenantContext.currentBranchId();
+        var rows = invoiceRepository.dailySalesInRangeByBranch(branchId, fromDate, toDate);
 
         var breakdown = rows.stream()
                 .map(r -> new DailySalesPoint(r.getInvoiceDate(), r.getTotal(), r.getCount()))
@@ -57,7 +58,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public InvoiceReport invoiceReport() {
         UUID businessId = TenantContext.currentBusinessId();
-        var counts = invoiceRepository.countByStatus(businessId).stream()
+        var counts = invoiceRepository.countByStatusAndBranch(TenantContext.currentBranchId()).stream()
                 .map(r -> new InvoiceStatusCount(r.getStatus().name(), r.getCount()))
                 .toList();
         return new InvoiceReport(counts);
@@ -66,7 +67,7 @@ public class ReportService {
     @Transactional(readOnly = true)
     public PaymentReport paymentReport(LocalDate fromDate, LocalDate toDate) {
         UUID businessId = TenantContext.currentBusinessId();
-        var rows = paymentRepository.sumByMethodInRange(businessId, fromDate, toDate);
+        var rows = paymentRepository.sumByMethodInRangeByBranch(TenantContext.currentBranchId(), fromDate, toDate);
 
         var byMethod = rows.stream()
                 .map(r -> new PaymentMethodTotal(r.getPaymentMethod().name(), r.getTotal(), r.getCount()))
@@ -80,7 +81,8 @@ public class ReportService {
     @Transactional(readOnly = true)
     public CustomerReport customerReport(LocalDate fromDate, LocalDate toDate, int limit) {
         UUID businessId = TenantContext.currentBusinessId();
-        var rows = invoiceRepository.topCustomersInRange(businessId, fromDate, toDate, PageRequest.of(0, limit));
+        UUID branchId = TenantContext.currentBranchId();
+        var rows = invoiceRepository.topCustomersInRangeByBranch(branchId, fromDate, toDate, PageRequest.of(0, limit));
 
         var customerIds = rows.stream().map(InvoiceRepository.CustomerSalesRow::getCustomerId).toList();
         Map<UUID, String> nameById = customerRepository.findAllById(customerIds).stream()
@@ -91,7 +93,7 @@ public class ReportService {
                         r.getTotal(), r.getInvoiceCount()))
                 .toList();
 
-        BigDecimal outstanding = invoiceRepository.sumPendingBalance(businessId);
+        BigDecimal outstanding = invoiceRepository.sumPendingBalanceByBranch(branchId);
 
         return new CustomerReport(fromDate, toDate, topCustomers, outstanding);
     }
@@ -99,7 +101,8 @@ public class ReportService {
     @Transactional(readOnly = true)
     public ProductReport productReport(LocalDate fromDate, LocalDate toDate, int limit) {
         UUID businessId = TenantContext.currentBusinessId();
-        var rows = invoiceItemRepository.topSellingProducts(businessId, fromDate, toDate, PageRequest.of(0, limit));
+        var rows = invoiceItemRepository.topSellingProductsByBranch(
+                TenantContext.currentBranchId(), fromDate, toDate, PageRequest.of(0, limit));
 
         var topProducts = rows.stream()
                 .map(r -> new TopProduct(r.getProductId(), r.getItemName(), r.getTotalQuantity(), r.getTotalAmount()))
@@ -111,8 +114,9 @@ public class ReportService {
     @Transactional(readOnly = true)
     public ExpenseReport expenseReport(LocalDate fromDate, LocalDate toDate) {
         UUID businessId = TenantContext.currentBusinessId();
-        BigDecimal total = expenseRepository.sumInRange(businessId, fromDate, toDate);
-        var rows = expenseRepository.sumByCategoryInRange(businessId, fromDate, toDate);
+        UUID branchId = TenantContext.currentBranchId();
+        BigDecimal total = expenseRepository.sumInRangeByBranch(branchId, fromDate, toDate);
+        var rows = expenseRepository.sumByCategoryInRangeByBranch(branchId, fromDate, toDate);
 
         var categories = categoryRepository.findByBusinessIdAndType(businessId, com.saasbilling.entity.CategoryType.EXPENSE)
                 .stream().collect(Collectors.toMap(Category::getId, Category::getName));

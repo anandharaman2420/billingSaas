@@ -1,61 +1,136 @@
-<div style="display: flex; min-height: 100vh;">
-  <aside style="width: 220px; background: var(--color-surface); border-right: 1px solid var(--color-border); padding: 20px 0; flex-shrink: 0;">
-    <div style="padding: 0 20px 20px; font-weight: 700; font-size: 1.1rem;">
-      {{ authService.currentUser()?.businessName }}
+<div class="app-layout" [class.sidebar-collapsed]="sidebarCollapsed">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" role="navigation" aria-label="Main navigation">
+    <!-- Brand -->
+    <div class="sidebar-brand">
+      <div class="brand-logo" aria-hidden="true">₹</div>
+      <span class="brand-name">{{ authService.currentUser()?.businessName || 'BillingSaaS' }}</span>
     </div>
-    <nav style="display: flex; flex-direction: column; gap: 2px;">
-      <a routerLink="/dashboard" routerLinkActive="active-nav" class="nav-link">Dashboard</a>
-      <a routerLink="/customers" routerLinkActive="active-nav" class="nav-link">Customers</a>
-      <a routerLink="/products" routerLinkActive="active-nav" class="nav-link">Products</a>
-      <a routerLink="/services" routerLinkActive="active-nav" class="nav-link">Services</a>
-      <a routerLink="/invoices" routerLinkActive="active-nav" class="nav-link">Invoices</a>
-      <a *ngIf="authService.hasRole('OWNER','ADMIN','MANAGER')" routerLink="/expenses" routerLinkActive="active-nav" class="nav-link">Expenses</a>
-      <a *ngIf="authService.hasRole('OWNER','ADMIN','MANAGER')" routerLink="/reports" routerLinkActive="active-nav" class="nav-link">Reports</a>
-      <a *ngIf="authService.hasRole('OWNER','ADMIN')" routerLink="/users" routerLinkActive="active-nav" class="nav-link">Team</a>
-      <a *ngIf="authService.hasRole('OWNER','ADMIN')" routerLink="/settings" routerLinkActive="active-nav" class="nav-link">Settings</a>
+
+    <nav class="sidebar-nav">
+      <!-- Main -->
+      <div class="nav-group">
+        <div class="nav-group-label">Main</div>
+        <a routerLink="/dashboard" routerLinkActive="nav-link--active" class="nav-link" aria-label="Dashboard">
+          <span class="nav-icon" aria-hidden="true">📊</span>
+          <span class="nav-text">Dashboard</span>
+        </a>
+        <a routerLink="/pos" routerLinkActive="nav-link--active" class="nav-link" aria-label="POS Billing">
+          <span class="nav-icon" aria-hidden="true">🧾</span>
+          <span class="nav-text">POS Billing</span>
+          <span class="nav-badge">FAST</span>
+        </a>
+      </div>
+
+      <!-- Catalog -->
+      <div class="nav-group">
+        <div class="nav-group-label">Catalog</div>
+        <a routerLink="/customers" routerLinkActive="nav-link--active" class="nav-link" aria-label="Customers">
+          <span class="nav-icon" aria-hidden="true">👥</span>
+          <span class="nav-text">Customers</span>
+        </a>
+        <a routerLink="/products" routerLinkActive="nav-link--active" class="nav-link" aria-label="Products">
+          <span class="nav-icon" aria-hidden="true">📦</span>
+          <span class="nav-text">Products</span>
+        </a>
+        <a routerLink="/services" routerLinkActive="nav-link--active" class="nav-link" aria-label="Services">
+          <span class="nav-icon" aria-hidden="true">🔧</span>
+          <span class="nav-text">Services</span>
+        </a>
+        <a routerLink="/invoices" routerLinkActive="nav-link--active" class="nav-link" aria-label="Invoices">
+          <span class="nav-icon" aria-hidden="true">📄</span>
+          <span class="nav-text">Invoices</span>
+        </a>
+      </div>
+
+      <!-- Finance -->
+      <div class="nav-group" *ngIf="authService.hasRole('OWNER','ADMIN','MANAGER')">
+        <div class="nav-group-label">Finance</div>
+        <a routerLink="/expenses" routerLinkActive="nav-link--active" class="nav-link" aria-label="Expenses">
+          <span class="nav-icon" aria-hidden="true">💸</span>
+          <span class="nav-text">Expenses</span>
+        </a>
+        <a routerLink="/reports" routerLinkActive="nav-link--active" class="nav-link" aria-label="Reports">
+          <span class="nav-icon" aria-hidden="true">📈</span>
+          <span class="nav-text">Reports</span>
+        </a>
+      </div>
+
+      <!-- Admin -->
+      <div class="nav-group" *ngIf="authService.hasRole('OWNER','ADMIN')">
+        <div class="nav-group-label">Admin</div>
+        <a routerLink="/users" routerLinkActive="nav-link--active" class="nav-link" aria-label="Team">
+          <span class="nav-icon" aria-hidden="true">🏢</span>
+          <span class="nav-text">Team</span>
+        </a>
+      </div>
+      <div class="nav-group" *ngIf="authService.hasRole('OWNER','ADMIN','MANAGER')">
+        <div class="nav-group-label">Configuration</div>
+        <a routerLink="/settings" routerLinkActive="nav-link--active" class="nav-link" aria-label="Settings">
+          <span class="nav-icon" aria-hidden="true">⚙️</span>
+          <span class="nav-text">Settings</span>
+        </a>
+      </div>
     </nav>
+
+    <!-- Sidebar footer -->
+    <div class="sidebar-footer">
+      <button class="sidebar-collapse-btn" (click)="toggleSidebar()" [attr.aria-label]="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+        <span aria-hidden="true">{{ sidebarCollapsed ? '→' : '←' }}</span>
+      </button>
+    </div>
   </aside>
 
-  <div style="flex: 1; display: flex; flex-direction: column;">
-    <header style="display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; border-bottom: 1px solid var(--color-border); background: var(--color-surface);">
-      <app-global-search></app-global-search>
-      <div style="display: flex; align-items: center;">
-      <span style="margin-right: 16px; color: var(--color-text-muted);">
-        <a routerLink="/profile" style="color: inherit;">{{ authService.currentUser()?.fullName }} · {{ authService.currentUser()?.role }}</a>
-      </span>
-      <button (click)="logout()">Log out</button>
+  <!-- Main content area -->
+  <div class="main-wrapper">
+    <!-- Header -->
+    <header class="app-header" role="banner">
+      <button class="header-menu-btn" (click)="toggleSidebar()" aria-label="Toggle menu">
+        <span aria-hidden="true">☰</span>
+      </button>
+
+      <div class="header-search">
+        <app-global-search></app-global-search>
+      </div>
+
+      <div class="header-actions">
+        <label *ngIf="branches().length > 1" style="display:flex; align-items:center; gap:8px;">
+          <span class="sr-only">Active branch</span>
+          <select #branchSelect [value]="selectedBranchId()" (change)="selectBranch(branchSelect.value)" aria-label="Active branch">
+            <option *ngFor="let branch of branches()" [value]="branch.id">{{ branch.branchName }}</option>
+          </select>
+        </label>
+        <!-- Dark mode toggle -->
+        <button class="btn-icon header-action-btn" (click)="toggleDarkMode()" [attr.aria-label]="darkMode ? 'Switch to light mode' : 'Switch to dark mode'" title="Toggle dark mode">
+          <span aria-hidden="true">{{ darkMode ? '☀️' : '🌙' }}</span>
+        </button>
+
+        <!-- User info -->
+        <a routerLink="/profile" class="header-user" aria-label="My profile">
+          <div class="user-avatar" aria-hidden="true">
+            {{ userInitials() }}
+          </div>
+          <div class="user-info hide-mobile">
+            <div class="user-name">{{ authService.currentUser()?.fullName }}</div>
+            <div class="user-role">{{ authService.currentUser()?.role }}</div>
+          </div>
+        </a>
+
+        <!-- Logout -->
+        <button class="btn btn-secondary btn-sm" (click)="logout()" aria-label="Log out">
+          Log out
+        </button>
       </div>
     </header>
 
-    <main style="flex: 1; overflow-y: auto;">
+    <!-- Page content -->
+    <main class="app-main" role="main">
+      <div class="alert-error" *ngIf="branchLoadError()" role="alert">{{ branchLoadError() }}</div>
       <router-outlet></router-outlet>
     </main>
   </div>
+
+  <!-- Mobile sidebar overlay -->
+  <div class="sidebar-overlay" *ngIf="mobileSidebarOpen" (click)="closeMobileSidebar()" aria-hidden="true"></div>
 </div>
-
-<style>
-  .nav-link {
-    padding: 10px 20px;
-    color: var(--color-text);
-    text-decoration: none;
-  }
-  .nav-link:hover {
-    background: var(--color-bg);
-  }
-  .nav-link.active-nav {
-    background: var(--color-bg);
-    font-weight: 600;
-    border-left: 3px solid var(--color-primary);
-  }
-
-  @media (max-width: 720px) {
-    aside {
-      width: 64px !important;
-    }
-    aside div:first-child,
-    .nav-link {
-      text-align: center;
-      font-size: 0.75rem;
-    }
-  }
-</style>

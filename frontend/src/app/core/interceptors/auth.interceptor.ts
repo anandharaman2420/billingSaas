@@ -15,8 +15,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const isAuthEndpoint = req.url.includes('/auth/login') || req.url.includes('/auth/register');
 
   if (token && !isAuthEndpoint) {
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+    const selectedBranchId = localStorage.getItem('active-branch-id');
+    if (selectedBranchId && !req.url.includes('/branches')) {
+      headers['X-Branch-Id'] = selectedBranchId;
+    }
     req = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` },
+      setHeaders: headers,
     });
   }
 

@@ -42,25 +42,27 @@ public class SearchService {
     @Transactional(readOnly = true)
     public GlobalSearchResponse search(String keyword) {
         UUID businessId = TenantContext.currentBusinessId();
+        UUID branchId = TenantContext.currentBranchId();
         var pageable = PageRequest.of(0, HITS_PER_SOURCE);
 
         if (keyword == null || keyword.isBlank()) {
             return new GlobalSearchResponse(java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of());
         }
 
-        var customers = customerRepository.search(businessId, keyword, null, pageable).getContent().stream()
+        var customers = customerRepository.searchByBranch(businessId, branchId, keyword, null, pageable).getContent().stream()
                 .map(c -> new CustomerHit(c.getId(), c.getCustomerName(), c.getPhone()))
                 .toList();
 
-        var products = productRepository.search(businessId, keyword, null, null, pageable).getContent().stream()
+        var products = productRepository.searchByBranch(businessId, branchId, keyword, null, null, pageable).getContent().stream()
                 .map(p -> new ProductHit(p.getId(), p.getProductName(), p.getSku()))
                 .toList();
 
-        var services = serviceRepository.search(businessId, keyword, null, null, pageable).getContent().stream()
+        var services = serviceRepository.searchByBranch(businessId, branchId, keyword, null, null, pageable).getContent().stream()
                 .map(s -> new ServiceHit(s.getId(), s.getServiceName()))
                 .toList();
 
-        var invoices = invoiceRepository.search(businessId, keyword, null, null, null, null, pageable).getContent().stream()
+        var invoices = invoiceRepository.searchByBranch(
+                businessId, branchId, keyword, null, null, null, null, pageable).getContent().stream()
                 .map(i -> new InvoiceHit(i.getId(), i.getInvoiceNumber(), i.getStatus().name(), i.getGrandTotal()))
                 .toList();
 

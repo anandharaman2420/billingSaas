@@ -1,59 +1,77 @@
-<div style="max-width: 960px; margin: 32px auto;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <h1 style="margin: 0;">Services</h1>
-    <a routerLink="/services/new" class="btn-primary" style="text-decoration: none;">+ Add service</a>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Services</h1>
+      <p class="text-muted" style="font-size:13px; margin-top:4px;">{{ result()?.totalElements || 0 }} total services</p>
+    </div>
+    <a routerLink="/services/new" class="btn btn-primary" aria-label="Add new service">+ Add Service</a>
+  </header>
+
+  <div class="search-bar">
+    <span class="search-icon" aria-hidden="true">🔍</span>
+    <input
+      type="search"
+      placeholder="Search by service name…"
+      [(ngModel)]="keyword"
+      (ngModelChange)="onKeywordChange()"
+      aria-label="Search services"
+    />
   </div>
 
-  <input
-    type="text"
-    placeholder="Search by service name…"
-    [(ngModel)]="keyword"
-    (ngModelChange)="onKeywordChange()"
-    style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius); margin-bottom: 16px;"
-  />
-
   <div class="card" style="padding: 0; overflow: hidden;">
-    <table style="width: 100%; border-collapse: collapse;">
+    <table class="data-table" role="grid" aria-label="Services list">
       <thead>
-        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
-          <th style="padding: 12px;">Name</th>
-          <th style="padding: 12px; text-align: right;">Price</th>
-          <th style="padding: 12px; text-align: right;">Tax %</th>
-          <th style="padding: 12px;">Status</th>
-          <th style="padding: 12px;"></th>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col" class="text-right">Price</th>
+          <th scope="col" class="text-right">Tax %</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let service of result()?.content" style="border-bottom: 1px solid var(--color-border);">
-          <td style="padding: 12px;">
-            <a [routerLink]="['/services', service.id]">{{ service.serviceName }}</a>
+        <tr *ngFor="let service of result()?.content">
+          <td>
+            <a [routerLink]="['/services', service.id]" class="fw-600">{{ service.serviceName }}</a>
           </td>
-          <td style="padding: 12px; text-align: right;">₹{{ service.price | number: '1.2-2' }}</td>
-          <td style="padding: 12px; text-align: right;">{{ service.taxRatePercent }}%</td>
-          <td style="padding: 12px;">{{ service.status }}</td>
-          <td style="padding: 12px; text-align: right;">
-            <button *ngIf="service.status === 'ACTIVE'" (click)="deactivate(service)" style="cursor: pointer;">
+          <td class="text-right fw-600">₹{{ service.price | number: '1.2-2' }}</td>
+          <td class="text-right text-muted">{{ service.taxRatePercent }}%</td>
+          <td>
+            <span class="badge" [ngClass]="service.status === 'ACTIVE' ? 'badge-success' : 'badge-neutral'">
+              {{ service.status }}
+            </span>
+          </td>
+          <td class="table-actions">
+            <button *ngIf="service.status === 'ACTIVE'" class="btn btn-secondary btn-sm" (click)="deactivate(service)">
               Deactivate
             </button>
-            <button *ngIf="service.status === 'INACTIVE'" (click)="reactivate(service)" style="cursor: pointer;">
+            <button *ngIf="service.status === 'INACTIVE'" class="btn btn-primary btn-sm" (click)="reactivate(service)">
               Reactivate
             </button>
           </td>
         </tr>
         <tr *ngIf="!loading() && result()?.content?.length === 0">
-          <td colspan="5" style="padding: 24px; text-align: center; color: var(--color-text-muted);">
-            No services found.
+          <td colspan="5">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">🔧</div>
+              <h3>No services found</h3>
+              <p>Add billable services like consulting, repairs, or labour.</p>
+              <a routerLink="/services/new" class="btn btn-primary btn-sm">+ Add Service</a>
+            </div>
           </td>
+        </tr>
+        <tr *ngIf="loading()">
+          <td colspan="5" style="padding: 32px; text-align:center; color: var(--color-text-muted);">Loading…</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
-    <span style="color: var(--color-text-muted);">{{ result()?.totalElements || 0 }} total</span>
-    <div style="display: flex; gap: 8px;">
-      <button (click)="prevPage()" [disabled]="result()?.first">Previous</button>
-      <button (click)="nextPage()" [disabled]="result()?.last">Next</button>
+  <div class="pagination">
+    <span class="pagination-info">{{ result()?.totalElements || 0 }} services</span>
+    <div class="pagination-controls">
+      <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="result()?.first" aria-label="Previous page">← Previous</button>
+      <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="result()?.last" aria-label="Next page">Next →</button>
     </div>
   </div>
 </div>

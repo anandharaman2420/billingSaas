@@ -36,6 +36,10 @@ export interface BusinessSettings {
   invoicePrefix: string;
   invoiceNumberFormat: string;
   invoiceNextSequence: number;
+  invoiceTemplate: 'CLASSIC' | 'MODERN' | 'MINIMAL';
+  posPrefix?: string;
+  posNumberFormat?: string;
+  posNextSequence?: number;
   financialYearStartMonth: number;
   defaultDueDays: number;
   currency: string;

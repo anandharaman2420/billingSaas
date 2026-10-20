@@ -52,8 +52,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login",
                             "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/refresh").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/auth/activate").permitAll()
-                    // Razorpay calls this without a JWT - it is authenticated by HMAC signature verification inside the controller instead.
-                    .requestMatchers(HttpMethod.POST, "/api/webhooks/razorpay").permitAll()
+                    // Providers call webhooks without a JWT; controller HMAC checks authenticate these requests.
+                    .requestMatchers(HttpMethod.POST, "/api/webhooks/razorpay", "/api/webhooks/stripe").permitAll()
                     .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     .anyRequest().authenticated())
@@ -67,7 +67,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(allowedOrigins); // never "*" - explicit origins only
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Branch-Id"));
         configuration.setExposedHeaders(List.of("Content-Disposition")); // for PDF/export downloads
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);

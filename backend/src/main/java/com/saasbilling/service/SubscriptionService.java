@@ -3,14 +3,16 @@ package com.saasbilling.service;
 import com.saasbilling.dto.subscription.SubscriptionDtos.ChangePlanRequest;
 import com.saasbilling.dto.subscription.SubscriptionDtos.CheckoutResponse;
 import com.saasbilling.dto.subscription.SubscriptionDtos.SubscriptionResponse;
+import com.saasbilling.dto.subscription.SubscriptionDtos.GatewayOptions;
 import com.saasbilling.entity.Business;
 import com.saasbilling.entity.Subscription;
-import com.saasbilling.entity.SubscriptionProvider;
 import com.saasbilling.entity.SubscriptionStatus;
 import com.saasbilling.exception.ForbiddenOperationException;
 import com.saasbilling.exception.ResourceNotFoundException;
 import com.saasbilling.payment.PlanPricing;
 import com.saasbilling.payment.RazorpayClient;
+import com.saasbilling.payment.StripeClient;
+import com.saasbilling.entity.SubscriptionProvider;
 import com.saasbilling.repository.BusinessRepository;
 import com.saasbilling.repository.SubscriptionRepository;
 import com.saasbilling.security.TenantContext;
@@ -18,14 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Spec section 38 foundation: subscription state lives here, separate
+ * Subscription state lives here, separate
  * from businesses.plan (which stays as a fast-read denormalized copy
- * that PlanLimits and the rest of the app already check). Only MANUAL
- * plan changes are implemented - no payment is actually taken. When a
- * real gateway is wired in, a webhook controller would call
- * applyProviderPlanChange() here instead of change() being called
- * directly by the business owner, and this service is where that
- * webhook handler plugs in without a schema change (see V8 migration).
+ * that PlanLimits and the rest of the app already check). Paid plans
+ * activate only from a verified payment-provider webhook; the MANUAL
+ * path remains available for free plans and deployments without gateways.
  */
 @Service
 public class SubscriptionService {
@@ -34,15 +33,21 @@ public class SubscriptionService {
     private final BusinessRepository businessRepository;
     private final AuditLogService auditLogService;
     private final RazorpayClient razorpayClient;
+    private final StripeClient stripeClient;
+    private final PlanPricing planPricing;
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
                                 BusinessRepository businessRepository,
                                 AuditLogService auditLogService,
-                                RazorpayClient razorpayClient) {
+                                RazorpayClient razorpayClient,
+                                StripeClient stripeClient,
+                                PlanPricing planPricing) {
         this.subscriptionRepository = subscriptionRepository;
         this.businessRepository = businessRepository;
         this.auditLogService = auditLogService;
         this.razorpayClient = razorpayClient;
+        this.stripeClient = stripeClient;
+        this.planPricing = planPricing;
     }
 
     @Transactional(readOnly = true)
@@ -50,13 +55,12 @@ public class SubscriptionService {
         return SubscriptionResponse.from(getOrCreateOwnSubscription());
     }
 
-    /** MVP: any OWNER/ADMIN can self-serve change their plan, no payment collected. */
+    /** Allows free plan changes and manual plan selection when gateways are disabled. */
     @Transactional
     public SubscriptionResponse changePlan(ChangePlanRequest request) {
-        // Once a real payment gateway is configured, a paid plan must be
-        // purchased through checkout - otherwise this manual endpoint would
-        // let any OWNER simply grant themselves a paid tier for free.
-        if (razorpayClient.isConfigured() && PlanPricing.monthlyPriceInr(request.plan()).signum() > 0) {
+        // A paid plan must be activated by a signed provider webhook whenever a gateway is enabled.
+        if ((razorpayClient.isConfigured() || stripeClient.isConfigured())
+                && planPricing.monthlyPriceInr(request.plan()).signum() > 0) {
             throw new ForbiddenOperationException("Paid plans must be purchased through checkout");
         }
         Subscription subscription = getOrCreateOwnSubscription();
@@ -80,37 +84,62 @@ public class SubscriptionService {
     }
 
     /**
-     * Starts an online purchase of a paid plan: creates a Razorpay order
-     * (tagged with this business + plan in its notes) and returns what the
-     * frontend needs to open Razorpay Checkout. The plan is NOT changed
-     * here - only when Razorpay's signed webhook confirms payment
-     * (see WebhookController -> applyProviderPlanChange).
+     * Starts provider checkout. The plan changes only after the provider's
+     * signed webhook confirms payment or subscription activation.
      */
     @Transactional(readOnly = true)
     public CheckoutResponse createCheckout(ChangePlanRequest request) {
-        if (!razorpayClient.isConfigured()) {
+        String provider = request.provider();
+        if (provider == null) {
+            provider = razorpayClient.isConfigured() ? "RAZORPAY" : "STRIPE";
+        }
+        if (!"RAZORPAY".equals(provider) && !"STRIPE".equals(provider)) {
+            throw new IllegalArgumentException("Unsupported payment provider");
+        }
+        if ("RAZORPAY".equals(provider) && !razorpayClient.isConfigured()
+                || "STRIPE".equals(provider) && !stripeClient.isConfigured()) {
             throw new IllegalArgumentException("Online payments are not configured for this deployment");
         }
-        var price = PlanPricing.monthlyPriceInr(request.plan());
+        var price = planPricing.monthlyPriceInr(request.plan());
         if (price.signum() <= 0) {
             throw new IllegalArgumentException("The " + request.plan() + " plan is free - no checkout needed");
         }
 
         java.util.UUID businessId = TenantContext.currentBusinessId();
-        var order = razorpayClient.createOrder(price, "sub_" + businessId.toString().substring(0, 8) + "_" + System.currentTimeMillis(),
+        if ("STRIPE".equals(provider)) {
+            var session = stripeClient.createSubscriptionSession(request.plan(), price, businessId.toString());
+            return new CheckoutResponse(provider, session.sessionId(), session.amountMinor(),
+                    session.currency(), null, session.checkoutUrl(), request.plan());
+        }
+        var order = razorpayClient.createOrder(price,
+                "sub_" + businessId.toString().substring(0, 8) + "_" + System.currentTimeMillis(),
                 java.util.Map.of("businessId", businessId.toString(), "plan", request.plan()));
 
-        return new CheckoutResponse(order.orderId(), order.amountPaise(), order.currency(), razorpayClient.getKeyId(), request.plan());
+        return new CheckoutResponse(provider, order.orderId(), order.amountPaise(), order.currency(),
+                razorpayClient.getKeyId(), null, request.plan());
+    }
+
+    @Transactional(readOnly = true)
+    public GatewayOptions availableGateways() {
+        java.util.List<String> providers = new java.util.ArrayList<>();
+        if (razorpayClient.isConfigured()) providers.add("RAZORPAY");
+        if (stripeClient.isConfigured()) providers.add("STRIPE");
+        return new GatewayOptions(providers);
     }
 
     /**
-     * Called by the signature-verified Razorpay webhook once payment is
-     * confirmed. Runs outside any authenticated request (no TenantContext),
-     * so it takes the business id explicitly. Idempotent on the payment id:
-     * Razorpay may deliver the same event more than once.
+     * Called by a signature-verified provider webhook. It runs outside
+     * authenticated requests, so the business id is explicit and updates
+     * are idempotent on the provider payment/subscription identifier.
      */
     @Transactional
     public void applyProviderPlanChange(java.util.UUID businessId, String plan, String providerPaymentId) {
+        applyProviderPlanChange(businessId, plan, providerPaymentId, SubscriptionProvider.RAZORPAY);
+    }
+
+    @Transactional
+    public void applyProviderPlanChange(java.util.UUID businessId, String plan, String providerPaymentId,
+                                       SubscriptionProvider provider) {
         Subscription subscription = subscriptionRepository.findByBusinessId(businessId).orElseGet(() -> {
             Subscription s = new Subscription();
             s.setBusinessId(businessId);
@@ -126,7 +155,7 @@ public class SubscriptionService {
 
         java.time.LocalDate today = java.time.LocalDate.now();
         subscription.setPlan(plan);
-        subscription.setProvider(SubscriptionProvider.RAZORPAY);
+        subscription.setProvider(provider);
         subscription.setStatus(SubscriptionStatus.ACTIVE);
         subscription.setProviderSubscriptionId(providerPaymentId);
         subscription.setCurrentPeriodStart(today);

@@ -7,6 +7,9 @@ import { SubscriptionApiService } from '../../core/services/subscription-api.ser
 import { AuthService } from '../../core/auth/auth.service';
 import { Subscription } from '../../core/models/business.model';
 import { ApiError } from '../../core/models/auth.model';
+import { RazorpayCheckoutService } from '../../core/services/razorpay-checkout.service';
+import { BranchApiService } from '../../core/services/branch-api.service';
+import { Branch, BranchRequest } from '../../core/models/branch.model';
 
 @Component({
   selector: 'app-settings',
@@ -33,6 +36,14 @@ export class SettingsComponent implements OnInit {
   readonly subscription = signal<Subscription | null>(null);
   readonly plans = ['FREE', 'BASIC', 'PROFESSIONAL', 'BUSINESS'];
   readonly planChanging = signal(false);
+  readonly gateways = signal<('RAZORPAY' | 'STRIPE')[]>([]);
+  readonly checkoutMessage = signal<string | null>(null);
+  readonly branches = signal<Branch[]>([]);
+  readonly branchSaving = signal(false);
+  readonly branchError = signal<string | null>(null);
+  readonly editingBranchId = signal<string | null>(null);
+  private readonly razorpayCheckout = inject(RazorpayCheckoutService);
+  private readonly branchApi = inject(BranchApiService);
 
   readonly profileForm = this.fb.group({
     businessName: ['', Validators.required],
@@ -53,6 +64,10 @@ export class SettingsComponent implements OnInit {
     invoicePrefix: ['INV', Validators.required],
     invoiceNumberFormat: ['{PREFIX}-{YEAR}-{SEQ:00000}', Validators.required],
     invoiceNextSequence: [1, [Validators.required, Validators.min(1)]],
+    invoiceTemplate: ['CLASSIC', Validators.required],
+    posPrefix: ['BILL'],
+    posNumberFormat: ['{PREFIX}-{YEAR}-{SEQ:00000}'],
+    posNextSequence: [1, [Validators.min(1)]],
     financialYearStartMonth: [4, [Validators.required, Validators.min(1), Validators.max(12)]],
     defaultDueDays: [7, [Validators.required, Validators.min(0)]],
     currency: ['INR', Validators.required],
@@ -60,6 +75,18 @@ export class SettingsComponent implements OnInit {
     invoiceNotes: [''],
     invoiceTerms: [''],
     themePreference: ['SYSTEM', Validators.required],
+  });
+
+  readonly branchForm = this.fb.group({
+    branchName: ['', Validators.required],
+    addressLine: [''],
+    city: [''],
+    state: [''],
+    pincode: [''],
+    country: ['India'],
+    phone: [''],
+    email: ['', Validators.email],
+    gstin: [''],
   });
 
   constructor(
@@ -72,6 +99,8 @@ export class SettingsComponent implements OnInit {
     this.businessApi.getProfile().subscribe((profile) => this.profileForm.patchValue(profile as any));
     this.businessApi.getSettings().subscribe((settings) => this.settingsForm.patchValue(settings as any));
     this.subscriptionApi.get().subscribe((sub) => this.subscription.set(sub));
+    this.subscriptionApi.gateways().subscribe((gateways) => this.gateways.set(gateways.providers));
+    this.loadBranches();
   }
 
   changePlan(plan: string): void {
@@ -93,26 +122,143 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  startCheckout(plan: string): void {
+  startCheckout(plan: string, provider: 'RAZORPAY' | 'STRIPE'): void {
     if (!this.authService.hasRole('OWNER')) return;
     this.planChanging.set(true);
     this.planChangeError.set(null);
-    // Razorpay Checkout itself (the razorpay-checkout.js widget) is not
-    // wired up in this sandbox build - this calls the backend to create
-    // the order and reports what would be needed to open it, since real
-    // checkout needs genuine Razorpay keys to test end-to-end.
-    this.subscriptionApi.checkout(plan).subscribe({
-      next: (checkout) => {
-        this.planChanging.set(false);
-        alert(
-          `Checkout order created (₹${checkout.amountPaise / 100} for ${checkout.plan}). ` +
-          `Opening Razorpay Checkout with this order is not wired up in this environment.`,
-        );
+    this.checkoutMessage.set(null);
+    this.subscriptionApi.checkout(plan, provider).subscribe({
+      next: async (checkout) => {
+        try {
+          if (checkout.provider === 'STRIPE') {
+            if (!checkout.checkoutUrl) throw new Error('Stripe did not return a checkout URL.');
+            window.location.assign(checkout.checkoutUrl);
+            return;
+          }
+          if (!checkout.keyId) throw new Error('Razorpay did not return a checkout key.');
+          await this.razorpayCheckout.open({
+            key: checkout.keyId,
+            amount: checkout.amountPaise,
+            currency: checkout.currency,
+            name: 'BillingSaaS',
+            description: `${checkout.plan} monthly subscription`,
+            order_id: checkout.orderId,
+            handler: () => {
+              this.checkoutMessage.set('Payment received. Your plan will update after payment verification.');
+              this.planChanging.set(false);
+              this.subscriptionApi.get().subscribe((sub) => this.subscription.set(sub));
+            },
+            modal: { ondismiss: () => this.planChanging.set(false) },
+          });
+        } catch (error) {
+          this.planChangeError.set(error instanceof Error ? error.message : 'Unable to open checkout.');
+          this.planChanging.set(false);
+        }
       },
       error: (err: HttpErrorResponse) => {
         const apiError = err.error as ApiError | undefined;
         this.planChangeError.set(apiError?.message ?? 'Checkout is not available.');
         this.planChanging.set(false);
+      },
+    });
+  }
+
+  loadBranches(): void {
+    this.branchApi.listAll().subscribe({
+      next: (branches) => this.branches.set(branches),
+      error: (err: HttpErrorResponse) => {
+        const apiError = err.error as ApiError | undefined;
+        this.branchError.set(apiError?.message ?? 'Failed to load branches.');
+      },
+    });
+  }
+
+  editBranch(branch: Branch): void {
+    if (branch.status !== 'ACTIVE') return;
+    this.editingBranchId.set(branch.id);
+    this.branchForm.patchValue(branch);
+    this.branchError.set(null);
+  }
+
+  resetBranchForm(): void {
+    this.editingBranchId.set(null);
+    this.branchForm.reset({
+      branchName: '',
+      addressLine: '',
+      city: '',
+      state: '',
+      pincode: '',
+      country: 'India',
+      phone: '',
+      email: '',
+      gstin: '',
+    });
+  }
+
+  saveBranch(): void {
+    if (!this.authService.hasRole('OWNER', 'ADMIN')) return;
+    if (this.branchForm.invalid) {
+      this.branchForm.markAllAsTouched();
+      return;
+    }
+    this.branchSaving.set(true);
+    this.branchError.set(null);
+    const raw = this.branchForm.getRawValue();
+    const request: BranchRequest = {
+      branchName: raw.branchName ?? '',
+      addressLine: raw.addressLine ?? undefined,
+      city: raw.city ?? undefined,
+      state: raw.state ?? undefined,
+      pincode: raw.pincode ?? undefined,
+      country: raw.country ?? undefined,
+      phone: raw.phone ?? undefined,
+      email: raw.email ?? undefined,
+      gstin: raw.gstin ?? undefined,
+    };
+    const branchId = this.editingBranchId();
+    const save = branchId ? this.branchApi.update(branchId, request) : this.branchApi.create(request);
+    save.subscribe({
+      next: () => {
+        this.branchSaving.set(false);
+        this.resetBranchForm();
+        this.loadBranches();
+      },
+      error: (err: HttpErrorResponse) => {
+        const apiError = err.error as ApiError | undefined;
+        this.branchError.set(apiError?.message ?? 'Failed to save branch.');
+        this.branchSaving.set(false);
+      },
+    });
+  }
+
+  deactivateBranch(branch: Branch): void {
+    if (!this.authService.hasRole('OWNER', 'ADMIN') || branch.defaultBranch || branch.status !== 'ACTIVE') return;
+    if (!window.confirm(`Deactivate ${branch.branchName}? Its existing records will be preserved.`)) return;
+    this.branchApi.deactivate(branch.id).subscribe({
+      next: () => {
+        const active = this.branchApi.selectedId();
+        const defaultBranch = this.branches().find((item) => item.defaultBranch);
+        if (active === branch.id && defaultBranch) {
+          this.branchApi.select(defaultBranch.id);
+          window.location.reload();
+          return;
+        }
+        this.loadBranches();
+      },
+      error: (err: HttpErrorResponse) => {
+        const apiError = err.error as ApiError | undefined;
+        this.branchError.set(apiError?.message ?? 'Failed to deactivate branch.');
+      },
+    });
+  }
+
+  reactivateBranch(branch: Branch): void {
+    if (!this.authService.hasRole('OWNER', 'ADMIN') || branch.status === 'ACTIVE') return;
+    this.branchApi.reactivate(branch.id).subscribe({
+      next: () => this.loadBranches(),
+      error: (err: HttpErrorResponse) => {
+        const apiError = err.error as ApiError | undefined;
+        this.branchError.set(apiError?.message ?? 'Failed to reactivate branch.');
       },
     });
   }

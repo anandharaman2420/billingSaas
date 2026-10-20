@@ -26,6 +26,12 @@ public class Invoice extends BaseEntity {
     @Column(name = "business_id", nullable = false)
     private UUID businessId;
 
+    @Column(name = "branch_id", nullable = false)
+    private UUID branchId;
+
+    @Column(name = "last_reminder_sent_at")
+    private OffsetDateTime lastReminderSentAt;
+
     @Column(name = "customer_id", nullable = false)
     private UUID customerId;
 
@@ -43,6 +49,10 @@ public class Invoice extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private InvoiceStatus status = InvoiceStatus.DRAFT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "invoice_type", nullable = false, length = 20)
+    private InvoiceType invoiceType = InvoiceType.STANDARD;
 
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;

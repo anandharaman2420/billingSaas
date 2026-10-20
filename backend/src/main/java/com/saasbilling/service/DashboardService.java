@@ -38,20 +38,21 @@ public class DashboardService {
     @Transactional(readOnly = true)
     public DashboardResponse getSummary() {
         UUID businessId = TenantContext.currentBusinessId();
+        UUID branchId = TenantContext.currentBranchId();
         LocalDate today = LocalDate.now();
         LocalDate monthStart = today.with(TemporalAdjusters.firstDayOfMonth());
         LocalDate monthEnd = today.with(TemporalAdjusters.lastDayOfMonth());
         LocalDate allTimeStart = LocalDate.of(2000, 1, 1);
 
         return new DashboardResponse(
-                invoiceRepository.sumSalesInRange(businessId, today, today),
-                invoiceRepository.sumSalesInRange(businessId, monthStart, monthEnd),
-                invoiceRepository.sumSalesInRange(businessId, allTimeStart, today),
-                invoiceRepository.sumPendingBalance(businessId),
-                invoiceRepository.sumPaidAmount(businessId),
-                invoiceRepository.countIssuedInvoices(businessId),
-                customerRepository.countByBusinessIdAndStatus(businessId, ActiveStatus.ACTIVE),
-                productRepository.countByBusinessIdAndStatus(businessId, ActiveStatus.ACTIVE)
+                invoiceRepository.sumSalesInRangeByBranch(branchId, today, today),
+                invoiceRepository.sumSalesInRangeByBranch(branchId, monthStart, monthEnd),
+                invoiceRepository.sumSalesInRangeByBranch(branchId, allTimeStart, today),
+                invoiceRepository.sumPendingBalanceByBranch(branchId),
+                invoiceRepository.sumPaidAmountByBranch(branchId),
+                invoiceRepository.countIssuedInvoicesByBranch(branchId),
+                customerRepository.countByBranchIdAndStatus(branchId, ActiveStatus.ACTIVE),
+                productRepository.countByBranchIdAndStatus(branchId, ActiveStatus.ACTIVE)
         );
     }
 }

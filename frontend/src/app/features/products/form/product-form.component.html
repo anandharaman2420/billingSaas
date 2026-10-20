@@ -1,62 +1,70 @@
-<div style="max-width: 560px; margin: 32px auto;" class="card">
-  <h1 style="margin-top: 0;">{{ productId ? 'Edit product' : 'Add product' }}</h1>
+<div class="page page-sm">
+  <header class="page-header">
+    <h1>{{ productId ? 'Edit Product' : 'Add Product' }}</h1>
+    <a routerLink="/products" class="btn btn-secondary btn-sm" aria-label="Back to product list">← Back to Products</a>
+  </header>
 
-  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+  <div class="card">
+    <div class="alert-error" *ngIf="errorMessage()" role="alert">{{ errorMessage() }}</div>
 
-  <form [formGroup]="form" (ngSubmit)="submit()">
-    <div class="form-field">
-      <label>Product name *</label>
-      <input formControlName="productName" />
-    </div>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-field">
+        <label class="form-label">Product Name *</label>
+        <input formControlName="productName" placeholder="e.g. Wireless Mouse / Basmati Rice 5kg" />
+      </div>
 
-    <div style="display: flex; gap: 12px;">
-      <div class="form-field" style="flex: 1;">
-        <label>SKU (optional)</label>
-        <input formControlName="sku" />
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">SKU (optional)</label>
+          <input formControlName="sku" placeholder="PROD-001" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">HSN Code (optional)</label>
+          <input formControlName="hsnCode" placeholder="8471" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Unit *</label>
+          <input formControlName="unit" placeholder="PCS, KG, BOX…" />
+        </div>
       </div>
-      <div class="form-field" style="flex: 1;">
-        <label>HSN code (optional)</label>
-        <input formControlName="hsnCode" />
-      </div>
-      <div class="form-field" style="flex: 1;">
-        <label>Unit *</label>
-        <input formControlName="unit" placeholder="PCS, KG, LTR…" />
-      </div>
-    </div>
 
-    <div class="form-field">
-      <label>Description</label>
-      <input formControlName="description" />
-    </div>
+      <div class="form-field">
+        <label class="form-label">Description</label>
+        <textarea formControlName="description" placeholder="Product details, specifications, etc."></textarea>
+      </div>
 
-    <div style="display: flex; gap: 12px;">
-      <div class="form-field" style="flex: 1;">
-        <label>Purchase price (₹) *</label>
-        <input formControlName="purchasePrice" type="number" min="0" step="0.01" />
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Purchase Price (₹) *</label>
+          <input formControlName="purchasePrice" type="number" min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Selling Price (₹) *</label>
+          <input formControlName="sellingPrice" type="number" min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">GST Tax Rate (%) *</label>
+          <input formControlName="taxRatePercent" type="number" min="0" max="100" step="0.01" placeholder="18" />
+        </div>
       </div>
-      <div class="form-field" style="flex: 1;">
-        <label>Selling price (₹) *</label>
-        <input formControlName="sellingPrice" type="number" min="0" step="0.01" />
-      </div>
-      <div class="form-field" style="flex: 1;">
-        <label>Tax rate (%) *</label>
-        <input formControlName="taxRatePercent" type="number" min="0" max="100" step="0.01" />
-      </div>
-    </div>
 
-    <div style="display: flex; gap: 12px;">
-      <div class="form-field" style="flex: 1;">
-        <label>Stock quantity *</label>
-        <input formControlName="stockQuantity" type="number" min="0" step="1" />
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Stock Quantity *</label>
+          <input formControlName="stockQuantity" type="number" min="0" step="1" placeholder="0" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Minimum Stock Alert Level *</label>
+          <input formControlName="minimumStockLevel" type="number" min="0" step="1" placeholder="5" />
+        </div>
       </div>
-      <div class="form-field" style="flex: 1;">
-        <label>Minimum stock level *</label>
-        <input formControlName="minimumStockLevel" type="number" min="0" step="1" />
-      </div>
-    </div>
 
-    <button type="submit" class="btn-primary" [disabled]="loading()">
-      {{ loading() ? 'Saving…' : 'Save product' }}
-    </button>
-  </form>
+      <div class="btn-group" style="margin-top: 8px;">
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">
+          {{ loading() ? 'Saving…' : 'Save Product' }}
+        </button>
+        <a routerLink="/products" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
 </div>

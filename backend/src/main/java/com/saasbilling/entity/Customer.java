@@ -25,6 +25,9 @@ public class Customer extends BaseEntity {
     @Column(name = "business_id", nullable = false)
     private UUID businessId;
 
+    @Column(name = "branch_id", nullable = false)
+    private UUID branchId;
+
     @Column(name = "customer_name", nullable = false, length = 150)
     private String customerName;
 

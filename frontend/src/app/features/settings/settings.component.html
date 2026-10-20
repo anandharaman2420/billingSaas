@@ -1,113 +1,160 @@
-<div style="max-width: 640px; margin: 32px auto;">
-  <h1>Settings</h1>
+<div class="page page-sm">
+  <header class="page-header">
+    <div>
+      <h1>Settings</h1>
+      <p class="text-muted" style="font-size:13px; margin-top:4px;">Manage business profile, invoice configuration, and subscription plan</p>
+    </div>
+  </header>
 
+  <!-- Business Profile Card -->
   <div class="card" style="margin-bottom: 24px;">
-    <h2 style="margin-top: 0;">Business profile</h2>
-    <div class="alert-error" *ngIf="profileError()">{{ profileError() }}</div>
-    <p *ngIf="profileSaved()" style="color: var(--color-success);">Saved.</p>
+    <h2 style="margin-top: 0; font-size: 16px; font-weight: 600;">🏢 Business Profile</h2>
+    <div class="alert-error" *ngIf="profileError()" role="alert">{{ profileError() }}</div>
+    <div class="alert-success" *ngIf="profileSaved()" role="status">✅ Business profile saved successfully.</div>
 
     <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
       <div class="form-field">
-        <label>Business name *</label>
-        <input formControlName="businessName" />
+        <label class="form-label">Business Name *</label>
+        <input formControlName="businessName" placeholder="Business name" />
       </div>
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>Business type</label>
-          <input formControlName="businessType" />
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Business Type</label>
+          <input formControlName="businessType" placeholder="Retail / Wholesale / Services" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>GSTIN</label>
-          <input formControlName="gstin" />
+        <div class="form-field">
+          <label class="form-label">GSTIN</label>
+          <input formControlName="gstin" placeholder="27AAPFU0939F1ZV" />
         </div>
       </div>
+
       <div class="form-field">
-        <label>Address</label>
-        <input formControlName="addressLine" />
+        <label class="form-label">Address</label>
+        <input formControlName="addressLine" placeholder="Building, Street" />
       </div>
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>City</label>
-          <input formControlName="city" />
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">City</label>
+          <input formControlName="city" placeholder="City" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>State</label>
-          <input formControlName="state" />
+        <div class="form-field">
+          <label class="form-label">State</label>
+          <input formControlName="state" placeholder="State" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Pincode</label>
-          <input formControlName="pincode" />
-        </div>
-      </div>
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>Phone</label>
-          <input formControlName="phone" />
-        </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Email</label>
-          <input formControlName="email" type="email" />
+        <div class="form-field">
+          <label class="form-label">Pincode</label>
+          <input formControlName="pincode" placeholder="Pincode" />
         </div>
       </div>
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>Website</label>
-          <input formControlName="website" />
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Phone</label>
+          <input formControlName="phone" placeholder="Phone number" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Logo</label>
+        <div class="form-field">
+          <label class="form-label">Email</label>
+          <input formControlName="email" type="email" placeholder="Business email" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Website</label>
+          <input formControlName="website" placeholder="https://example.com" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Business Logo</label>
           <input type="file" accept="image/png,image/jpeg,image/webp" (change)="uploadLogo($event)" />
-          <span *ngIf="logoUploading()" style="color: var(--color-text-muted); font-size: 0.85rem;">Uploading…</span>
+          <span class="form-hint">Optional. This logo appears in downloaded invoice PDFs.</span>
+          <span *ngIf="logoUploading()" class="text-muted" style="font-size: 0.85rem;">Uploading…</span>
           <span *ngIf="logoError()" class="form-error">{{ logoError() }}</span>
-          <img *ngIf="profileForm.get('logoUrl')?.value as logoUrl" [src]="logoUrl" alt="Business logo" style="max-height: 48px; margin-top: 4px;" />
+          <div *ngIf="profileForm.get('logoUrl')?.value as logoUrl" style="margin-top: 6px;">
+            <img [src]="logoUrl" alt="Business logo preview" style="max-height: 48px; border-radius: var(--radius); border: 1px solid var(--color-border);" />
+          </div>
         </div>
       </div>
-      <button type="submit" class="btn-primary" [disabled]="profileLoading()">
-        {{ profileLoading() ? 'Saving…' : 'Save business profile' }}
+
+      <button type="submit" class="btn btn-primary" [disabled]="profileLoading()" style="margin-top: 8px;">
+        {{ profileLoading() ? 'Saving…' : 'Save Business Profile' }}
       </button>
     </form>
   </div>
 
-  <div class="card">
-    <h2 style="margin-top: 0;">Invoice settings</h2>
-    <div class="alert-error" *ngIf="settingsError()">{{ settingsError() }}</div>
-    <p *ngIf="settingsSaved()" style="color: var(--color-success);">Saved.</p>
+  <!-- Invoice Settings Card -->
+  <div class="card" style="margin-bottom: 24px;">
+    <h2 style="margin-top: 0; font-size: 16px; font-weight: 600;">🧾 Invoice Settings</h2>
+    <div class="alert-error" *ngIf="settingsError()" role="alert">{{ settingsError() }}</div>
+    <div class="alert-success" *ngIf="settingsSaved()" role="status">✅ Invoice settings saved successfully.</div>
 
     <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>Invoice prefix *</label>
-          <input formControlName="invoicePrefix" />
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Invoice Prefix *</label>
+          <input formControlName="invoicePrefix" placeholder="INV" />
         </div>
-        <div class="form-field" style="flex: 2;">
-          <label>Number format *</label>
-          <input formControlName="invoiceNumberFormat" />
+        <div class="form-field">
+          <label class="form-label">Invoice Number Format *</label>
+          <input formControlName="invoiceNumberFormat" placeholder="{PREFIX}-{YEAR}-{SEQ:00000}" />
         </div>
-      </div>
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>Next invoice sequence *</label>
+        <div class="form-field">
+          <label class="form-label">Next Invoice Sequence # *</label>
           <input type="number" formControlName="invoiceNextSequence" min="1" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Default due days *</label>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label" for="invoice-template">Invoice Print Template</label>
+        <select id="invoice-template" formControlName="invoiceTemplate">
+          <option value="CLASSIC">Classic — blue business header</option>
+          <option value="MODERN">Modern — bold slate header</option>
+          <option value="MINIMAL">Minimal — clean monochrome</option>
+        </select>
+        <span class="form-hint">Choose the style used in downloaded invoice PDFs.</span>
+      </div>
+
+      <div style="margin: 16px 0 12px; padding: 12px; background: var(--color-surface-2); border-radius: var(--radius); border: 1px solid var(--color-border);">
+        <div class="fw-600" style="margin-bottom: 8px; font-size: 13.5px;">🧾 POS Counter Billing Sequence</div>
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">POS Bill Prefix</label>
+            <input formControlName="posPrefix" placeholder="BILL" />
+          </div>
+          <div class="form-field">
+            <label class="form-label">POS Bill Number Format</label>
+            <input formControlName="posNumberFormat" placeholder="{PREFIX}-{YEAR}-{SEQ:00000} or BILL-YYYY-00001" />
+            <span class="form-hint">e.g. BILL-YYYY-00001 produces BILL-2026-00003</span>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Next Bill Sequence #</label>
+            <input type="number" formControlName="posNextSequence" min="1" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Default Due Days *</label>
           <input type="number" formControlName="defaultDueDays" min="0" />
         </div>
       </div>
-      <div style="display: flex; gap: 12px;">
-        <div class="form-field" style="flex: 1;">
-          <label>Currency *</label>
-          <input formControlName="currency" />
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Currency *</label>
+          <input formControlName="currency" placeholder="INR" />
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Tax mode *</label>
+        <div class="form-field">
+          <label class="form-label">Tax Mode *</label>
           <select formControlName="taxMode">
             <option value="EXCLUSIVE">Exclusive of tax</option>
             <option value="INCLUSIVE">Inclusive of tax</option>
           </select>
         </div>
-        <div class="form-field" style="flex: 1;">
-          <label>Theme</label>
+        <div class="form-field">
+          <label class="form-label">Theme Preference</label>
           <select formControlName="themePreference">
             <option value="LIGHT">Light</option>
             <option value="DARK">Dark</option>
@@ -115,54 +162,116 @@
           </select>
         </div>
       </div>
+
       <div class="form-field">
-        <label>Default invoice notes</label>
-        <input formControlName="invoiceNotes" />
+        <label class="form-label">Default Invoice Notes</label>
+        <textarea formControlName="invoiceNotes" placeholder="Default notes printed on bottom of invoices"></textarea>
       </div>
+
       <div class="form-field">
-        <label>Default terms &amp; conditions</label>
-        <input formControlName="invoiceTerms" />
+        <label class="form-label">Default Terms &amp; Conditions</label>
+        <textarea formControlName="invoiceTerms" placeholder="Standard terms, payment instructions, etc."></textarea>
       </div>
-      <button type="submit" class="btn-primary" [disabled]="settingsLoading()">
-        {{ settingsLoading() ? 'Saving…' : 'Save invoice settings' }}
+
+      <button type="submit" class="btn btn-primary" [disabled]="settingsLoading()" style="margin-top: 8px;">
+        {{ settingsLoading() ? 'Saving…' : 'Save Invoice Settings' }}
       </button>
     </form>
   </div>
 
-  <div class="card" style="margin-top: 24px;" *ngIf="subscription() as sub">
-    <h2 style="margin-top: 0;">Billing plan</h2>
-    <p>
-      Current plan: <strong>{{ sub.plan }}</strong>
-      <span style="color: var(--color-text-muted);"> · {{ sub.status }}</span>
+  <!-- Branches Card -->
+  <div class="card" *ngIf="authService.hasRole('OWNER', 'ADMIN')">
+    <h2 style="margin-top: 0; font-size: 16px; font-weight: 600;">📍 Branches</h2>
+    <p class="text-muted" style="font-size: 13px;">Branch records, customers, catalog, invoices, expenses, settings, and reports are kept separate.</p>
+    <div class="alert-error" *ngIf="branchError()" role="alert">{{ branchError() }}</div>
+    <div *ngFor="let branch of branches()" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--color-border);">
+      <div>
+        <strong>{{ branch.branchName }}</strong>
+        <span *ngIf="branch.defaultBranch" class="badge badge-primary" style="margin-left:8px;">Default</span>
+        <span *ngIf="branch.status !== 'ACTIVE'" class="badge badge-neutral" style="margin-left:8px;">Inactive</span>
+        <div class="text-muted" style="font-size:12px;">{{ branch.city }}<span *ngIf="branch.state">, {{ branch.state }}</span></div>
+      </div>
+      <div class="btn-group">
+        <button type="button" class="btn btn-secondary btn-sm" *ngIf="branch.status === 'ACTIVE'" (click)="editBranch(branch)">Edit</button>
+        <button type="button" class="btn btn-secondary btn-sm" *ngIf="branch.status === 'ACTIVE' && !branch.defaultBranch" (click)="deactivateBranch(branch)">Deactivate</button>
+        <button type="button" class="btn btn-secondary btn-sm" *ngIf="branch.status !== 'ACTIVE'" (click)="reactivateBranch(branch)">Reactivate</button>
+      </div>
+    </div>
+    <form [formGroup]="branchForm" (ngSubmit)="saveBranch()" style="margin-top:16px;">
+      <h3 style="font-size:14px;">{{ editingBranchId() ? 'Edit branch' : 'Add branch' }}</h3>
+      <div class="form-row">
+        <label class="form-label">Branch name <input class="form-control" formControlName="branchName" maxlength="150" required /></label>
+        <label class="form-label">Phone <input class="form-control" formControlName="phone" maxlength="20" /></label>
+      </div>
+      <label class="form-label">Address <input class="form-control" formControlName="addressLine" maxlength="255" /></label>
+      <div class="form-row">
+        <label class="form-label">City <input class="form-control" formControlName="city" maxlength="100" /></label>
+        <label class="form-label">State <input class="form-control" formControlName="state" maxlength="100" /></label>
+        <label class="form-label">Pincode <input class="form-control" formControlName="pincode" maxlength="20" /></label>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Country <input class="form-control" formControlName="country" maxlength="100" /></label>
+        <label class="form-label">Email <input class="form-control" formControlName="email" type="email" maxlength="150" /></label>
+        <label class="form-label">GSTIN <input class="form-control" formControlName="gstin" maxlength="20" /></label>
+      </div>
+      <div class="btn-group" style="margin-top:10px;">
+        <button type="submit" class="btn btn-primary" [disabled]="branchSaving()">{{ branchSaving() ? 'Saving…' : (editingBranchId() ? 'Save branch' : 'Add branch') }}</button>
+        <button type="button" class="btn btn-secondary" *ngIf="editingBranchId()" (click)="resetBranchForm()">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" *ngIf="subscription() as sub">
+    <h2 style="margin-top: 0; font-size: 16px; font-weight: 600;">💎 Billing Plan &amp; Subscription</h2>
+    <div style="display: flex; align-items: center; gap: 8px; margin: 12px 0;">
+      <span>Current Plan:</span>
+      <span class="badge badge-primary" style="font-size: 13px;">{{ sub.plan }}</span>
+      <span class="badge" [ngClass]="sub.status === 'ACTIVE' ? 'badge-success' : 'badge-neutral'">{{ sub.status }}</span>
+    </div>
+
+    <p class="text-muted" style="font-size: 13px; line-height: 1.5;">
+      Your plan controls limits on team members, customers, and monthly invoices. Free tier can be switched instantly.
     </p>
-    <p style="color: var(--color-text-muted); font-size: 0.85rem;">
-      Your plan controls limits on team members, customers, and invoices per month. The FREE tier can be
-      switched instantly; paid tiers go through checkout once payment collection is configured for this
-      deployment (otherwise they're also a manual switch, for testing).
-    </p>
-    <div class="alert-error" *ngIf="planChangeError()">{{ planChangeError() }}</div>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+
+    <div class="alert-error" *ngIf="planChangeError()" role="alert">{{ planChangeError() }}</div>
+    <div class="alert-success" *ngIf="checkoutMessage()" role="status">{{ checkoutMessage() }}</div>
+
+    <div class="btn-group" style="margin-top: 14px;">
       <ng-container *ngFor="let p of plans">
         <button
           *ngIf="p === 'FREE'"
-          [class.btn-primary]="p === sub.plan"
+          class="btn"
+          [ngClass]="p === sub.plan ? 'btn-primary' : 'btn-secondary'"
           [disabled]="planChanging() || p === sub.plan || !authService.hasRole('OWNER')"
           (click)="changePlan(p)"
         >
           {{ p }}
         </button>
         <button
-          *ngIf="p !== 'FREE'"
-          [class.btn-primary]="p === sub.plan"
-          [disabled]="planChanging() || p === sub.plan || !authService.hasRole('OWNER')"
-          (click)="startCheckout(p)"
+          *ngIf="p !== 'FREE' && gateways().includes('RAZORPAY')"
+          class="btn"
+          [ngClass]="p === sub.plan ? 'btn-primary' : 'btn-secondary'"
+          [disabled]="planChanging() || p === sub.plan || !authService.hasRole('OWNER') || gateways().length === 0"
+          (click)="startCheckout(p, 'RAZORPAY')"
         >
-          {{ p }}
+          {{ p }} · Razorpay
+        </button>
+        <button
+          *ngIf="p !== 'FREE' && gateways().includes('STRIPE')"
+          class="btn btn-secondary"
+          [disabled]="planChanging() || p === sub.plan || !authService.hasRole('OWNER')"
+          (click)="startCheckout(p, 'STRIPE')"
+        >
+          {{ p }} · Stripe
         </button>
       </ng-container>
     </div>
-    <p *ngIf="!authService.hasRole('OWNER')" style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 8px;">
-      Only the business owner can change the plan.
+    <p *ngIf="gateways().length === 0" class="text-muted" style="font-size: 12px; margin-top: 12px;">
+      Online checkout is not configured. Contact your administrator to enable a payment provider.
+    </p>
+
+    <p *ngIf="!authService.hasRole('OWNER')" class="text-muted" style="font-size: 12px; margin-top: 12px;">
+      🔒 Only the business owner can change subscription tiers.
     </p>
   </div>
 </div>

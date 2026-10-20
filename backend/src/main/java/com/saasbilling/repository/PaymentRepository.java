@@ -18,6 +18,15 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     Optional<Payment> findByIdAndBusinessId(UUID id, UUID businessId);
 
+    @Query("""
+            select p from Payment p
+            where p.id = :id and p.businessId = :businessId
+              and p.invoiceId in (select i.id from Invoice i where i.branchId = :branchId)
+            """)
+    Optional<Payment> findByIdAndBusinessIdAndBranchId(@Param("id") UUID id,
+                                                        @Param("businessId") UUID businessId,
+                                                        @Param("branchId") UUID branchId);
+
     List<Payment> findByInvoiceIdAndVoidedFalseOrderByPaymentDateAsc(UUID invoiceId);
 
     /**
@@ -48,6 +57,27 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
                           Pageable pageable);
 
     @Query("""
+            select p from Payment p
+            where p.businessId = :businessId and p.invoiceId in
+                  (select i.id from Invoice i where i.branchId = :branchId)
+              and (:invoiceId is null or p.invoiceId = :invoiceId)
+              and (:customerId is null or p.customerId = :customerId)
+              and (:method is null or p.paymentMethod = :method)
+              and (:fromDate is null or p.paymentDate >= :fromDate)
+              and (:toDate is null or p.paymentDate <= :toDate)
+              and (:includeVoided = true or p.voided = false)
+            """)
+    Page<Payment> searchByBranch(@Param("businessId") UUID businessId,
+                                  @Param("branchId") UUID branchId,
+                                  @Param("invoiceId") UUID invoiceId,
+                                  @Param("customerId") UUID customerId,
+                                  @Param("method") PaymentMethod method,
+                                  @Param("fromDate") LocalDate fromDate,
+                                  @Param("toDate") LocalDate toDate,
+                                  @Param("includeVoided") boolean includeVoided,
+                                  Pageable pageable);
+
+    @Query("""
             select coalesce(sum(p.amount), 0) from Payment p
             where p.businessId = :businessId and p.voided = false
               and p.paymentDate >= :fromDate and p.paymentDate <= :toDate
@@ -55,6 +85,15 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     BigDecimal sumActiveAmountInRange(@Param("businessId") UUID businessId,
                                        @Param("fromDate") LocalDate fromDate,
                                        @Param("toDate") LocalDate toDate);
+
+    @Query("""
+            select coalesce(sum(p.amount), 0) from Payment p
+            where p.invoiceId in (select i.id from Invoice i where i.branchId = :branchId)
+              and p.voided = false and p.paymentDate >= :fromDate and p.paymentDate <= :toDate
+            """)
+    BigDecimal sumActiveAmountInRangeByBranch(@Param("branchId") UUID branchId,
+                                               @Param("fromDate") LocalDate fromDate,
+                                               @Param("toDate") LocalDate toDate);
 
     interface MethodTotalRow {
         PaymentMethod getPaymentMethod();
@@ -72,4 +111,15 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     List<MethodTotalRow> sumByMethodInRange(@Param("businessId") UUID businessId,
                                              @Param("fromDate") LocalDate fromDate,
                                              @Param("toDate") LocalDate toDate);
+
+    @Query("""
+            select p.paymentMethod as paymentMethod, sum(p.amount) as total, count(p) as count
+            from Payment p
+            where p.invoiceId in (select i.id from Invoice i where i.branchId = :branchId)
+              and p.voided = false and p.paymentDate >= :fromDate and p.paymentDate <= :toDate
+            group by p.paymentMethod
+            """)
+    List<MethodTotalRow> sumByMethodInRangeByBranch(@Param("branchId") UUID branchId,
+                                                     @Param("fromDate") LocalDate fromDate,
+                                                     @Param("toDate") LocalDate toDate);
 }

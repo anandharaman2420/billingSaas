@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class InvoiceServiceTest {
 
     @Autowired private BusinessRepository businessRepository;
+    @Autowired private BranchRepository branchRepository;
     @Autowired private BusinessSettingsRepository businessSettingsRepository;
     @Autowired private CustomerRepository customerRepository;
     @Autowired private ProductRepository productRepository;
@@ -113,7 +114,8 @@ class InvoiceServiceTest {
 
     // -----------------------------------------------------------------
     private void setTenantContext(UUID businessId, UUID userId) {
-        TenantContext.set(new TenantContext.AuthenticatedPrincipal(userId, businessId, "test@example.com", "OWNER"));
+        TenantContext.set(new TenantContext.AuthenticatedPrincipal(userId, businessId, "test@example.com", "OWNER",
+                defaultBranchId(businessId)));
     }
 
     private Business createBusiness(String name, String email, String state) {
@@ -124,18 +126,27 @@ class InvoiceServiceTest {
         business.setPhone("9999999999");
         business.setState(state);
         business.setStatus(BusinessStatus.ACTIVE);
-        return businessRepository.save(business);
+        business = businessRepository.save(business);
+        Branch branch = new Branch();
+        branch.setBusinessId(business.getId());
+        branch.setBranchName("Main Branch");
+        branch.setState(state);
+        branch.setDefaultBranch(true);
+        branchRepository.save(branch);
+        return business;
     }
 
     private BusinessSettings createSettings(Business business) {
         BusinessSettings settings = new BusinessSettings();
         settings.setBusiness(business);
+        settings.setBranchId(defaultBranchId(business.getId()));
         return businessSettingsRepository.save(settings);
     }
 
     private Customer createCustomer(UUID businessId, String name, String state) {
         Customer customer = new Customer();
         customer.setBusinessId(businessId);
+        customer.setBranchId(defaultBranchId(businessId));
         customer.setCustomerName(name);
         customer.setState(state);
         return customerRepository.save(customer);
@@ -144,11 +155,16 @@ class InvoiceServiceTest {
     private Product createProduct(UUID businessId, String name, BigDecimal price, BigDecimal taxRate) {
         Product product = new Product();
         product.setBusinessId(businessId);
+        product.setBranchId(defaultBranchId(businessId));
         product.setProductName(name);
         product.setUnit("PCS");
         product.setPurchasePrice(price);
         product.setSellingPrice(price);
         product.setTaxRatePercent(taxRate);
         return productRepository.save(product);
+    }
+
+    private UUID defaultBranchId(UUID businessId) {
+        return branchRepository.findFirstByBusinessIdAndDefaultBranchTrue(businessId).orElseThrow().getId();
     }
 }

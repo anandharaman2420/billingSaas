@@ -66,4 +66,13 @@ export class UserListComponent implements OnInit {
   enable(user: TeamUser): void {
     this.userApi.enable(user.id).subscribe(() => this.load());
   }
+
+  roleBadgeClass(role: string): string {
+    switch (role) {
+      case 'OWNER': return 'badge-danger';
+      case 'ADMIN': return 'badge-warning';
+      case 'MANAGER': return 'badge-info';
+      default: return 'badge-neutral';
+    }
+  }
 }

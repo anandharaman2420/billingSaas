@@ -18,9 +18,21 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
     // reading/editing Business B's customer by guessing/reusing an id.
     Optional<Customer> findByIdAndBusinessId(UUID id, UUID businessId);
 
+    Optional<Customer> findByIdAndBusinessIdAndBranchId(UUID id, UUID businessId, UUID branchId);
+
+    Optional<Customer> findFirstByBusinessIdAndPhone(UUID businessId, String phone);
+
+    Optional<Customer> findFirstByBusinessIdAndCustomerNameIgnoreCase(UUID businessId, String customerName);
+
+    Optional<Customer> findFirstByBranchIdAndPhone(UUID branchId, String phone);
+
+    Optional<Customer> findFirstByBranchIdAndCustomerNameIgnoreCase(UUID branchId, String customerName);
+
     boolean existsByIdAndBusinessId(UUID id, UUID businessId);
 
     long countByBusinessIdAndStatus(UUID businessId, com.saasbilling.entity.ActiveStatus status);
+
+    long countByBranchIdAndStatus(UUID branchId, com.saasbilling.entity.ActiveStatus status);
 
     /**
      * Search across name/phone/email/gstin, scoped to the tenant, with
@@ -43,4 +55,22 @@ public interface CustomerRepository extends JpaRepository<Customer, UUID> {
                            @Param("keyword") String keyword,
                            @Param("status") com.saasbilling.entity.ActiveStatus status,
                            Pageable pageable);
+
+    @Query("""
+            select c from Customer c
+            where c.businessId = :businessId and c.branchId = :branchId
+              and (:status is null or c.status = :status)
+              and (
+                    :keyword is null or :keyword = ''
+                    or lower(c.customerName) like lower(concat('%', :keyword, '%'))
+                    or lower(coalesce(c.phone, '')) like lower(concat('%', :keyword, '%'))
+                    or lower(coalesce(c.email, '')) like lower(concat('%', :keyword, '%'))
+                    or lower(coalesce(c.gstin, '')) like lower(concat('%', :keyword, '%'))
+                  )
+            """)
+    Page<Customer> searchByBranch(@Param("businessId") UUID businessId,
+                                   @Param("branchId") UUID branchId,
+                                   @Param("keyword") String keyword,
+                                   @Param("status") com.saasbilling.entity.ActiveStatus status,
+                                   Pageable pageable);
 }

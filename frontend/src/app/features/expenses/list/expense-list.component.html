@@ -1,54 +1,70 @@
-<div style="max-width: 960px; margin: 32px auto;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <h1 style="margin: 0;">Expenses</h1>
-    <a routerLink="/expenses/new" class="btn-primary" style="text-decoration: none;">+ Add expense</a>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Expenses</h1>
+      <p class="text-muted" style="font-size:13px; margin-top:4px;">{{ result()?.totalElements || 0 }} total expenses</p>
+    </div>
+    <a routerLink="/expenses/new" class="btn btn-primary" aria-label="Add new expense">+ Add Expense</a>
+  </header>
+
+  <div class="search-bar">
+    <span class="search-icon" aria-hidden="true">🔍</span>
+    <input
+      type="search"
+      placeholder="Search by description…"
+      [(ngModel)]="keyword"
+      (ngModelChange)="onKeywordChange()"
+      aria-label="Search expenses"
+    />
   </div>
 
-  <input
-    type="text"
-    placeholder="Search by description…"
-    [(ngModel)]="keyword"
-    (ngModelChange)="onKeywordChange()"
-    style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius); margin-bottom: 16px;"
-  />
-
   <div class="card" style="padding: 0; overflow: hidden;">
-    <table style="width: 100%; border-collapse: collapse;">
+    <table class="data-table" role="grid" aria-label="Expense list">
       <thead>
-        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
-          <th style="padding: 12px;">Date</th>
-          <th style="padding: 12px;">Description</th>
-          <th style="padding: 12px;">Method</th>
-          <th style="padding: 12px; text-align: right;">Amount</th>
-          <th style="padding: 12px;"></th>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Description</th>
+          <th scope="col">Method</th>
+          <th scope="col" class="text-right">Amount</th>
+          <th scope="col" class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let expense of result()?.content" style="border-bottom: 1px solid var(--color-border);">
-          <td style="padding: 12px;">{{ expense.expenseDate | date: 'dd MMM yyyy' }}</td>
-          <td style="padding: 12px;">
-            <a [routerLink]="['/expenses', expense.id]">{{ expense.description }}</a>
+        <tr *ngFor="let expense of result()?.content">
+          <td class="text-muted">{{ expense.expenseDate | date: 'dd MMM yyyy' }}</td>
+          <td>
+            <a [routerLink]="['/expenses', expense.id]" class="fw-600">{{ expense.description }}</a>
           </td>
-          <td style="padding: 12px;">{{ expense.paymentMethod }}</td>
-          <td style="padding: 12px; text-align: right;">₹{{ expense.amount | number: '1.2-2' }}</td>
-          <td style="padding: 12px; text-align: right;">
-            <button (click)="remove(expense)">Delete</button>
+          <td>
+            <span class="badge badge-neutral">{{ expense.paymentMethod }}</span>
+          </td>
+          <td class="text-right fw-600">₹{{ expense.amount | number: '1.2-2' }}</td>
+          <td class="table-actions">
+            <button class="btn btn-danger btn-sm" (click)="remove(expense)" aria-label="Delete expense">Delete</button>
           </td>
         </tr>
         <tr *ngIf="!loading() && result()?.content?.length === 0">
-          <td colspan="5" style="padding: 24px; text-align: center; color: var(--color-text-muted);">
-            No expenses found.
+          <td colspan="5">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">💸</div>
+              <h3>No expenses found</h3>
+              <p>Start tracking your business expenses.</p>
+              <a routerLink="/expenses/new" class="btn btn-primary btn-sm">+ Add Expense</a>
+            </div>
           </td>
+        </tr>
+        <tr *ngIf="loading()">
+          <td colspan="5" style="padding: 32px; text-align:center; color: var(--color-text-muted);">Loading…</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
-    <span style="color: var(--color-text-muted);">{{ result()?.totalElements || 0 }} total</span>
-    <div style="display: flex; gap: 8px;">
-      <button (click)="prevPage()" [disabled]="result()?.first">Previous</button>
-      <button (click)="nextPage()" [disabled]="result()?.last">Next</button>
+  <div class="pagination">
+    <span class="pagination-info">{{ result()?.totalElements || 0 }} expenses</span>
+    <div class="pagination-controls">
+      <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="result()?.first" aria-label="Previous page">← Previous</button>
+      <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="result()?.last" aria-label="Next page">Next →</button>
     </div>
   </div>
 </div>

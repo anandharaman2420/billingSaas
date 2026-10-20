@@ -1,99 +1,271 @@
-<div style="max-width: 900px; margin: 32px auto;">
-  <h1>Reports</h1>
+<div class="page">
+  <header class="page-header">
+    <h1>📈 Reports &amp; Analytics</h1>
+    <a [href]="salesCsvUrl" class="btn btn-secondary" download aria-label="Download sales CSV">📥 Download Sales CSV</a>
+  </header>
 
-  <div class="card" style="display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
-    <div class="form-field" style="margin-bottom: 0;">
-      <label>From</label>
-      <input type="date" [(ngModel)]="fromDate" />
+  <!-- Date Range Filter -->
+  <div class="card filter-card">
+    <h2 class="filter-card__title">Date Range Filter</h2>
+    <div class="date-filter">
+      <div class="form-field date-filter__field">
+        <label class="form-label" for="fromDate">From</label>
+        <input id="fromDate" type="date" [(ngModel)]="fromDate" class="form-input" />
+      </div>
+      <div class="form-field date-filter__field">
+        <label class="form-label" for="toDate">To</label>
+        <input id="toDate" type="date" [(ngModel)]="toDate" class="form-input" />
+      </div>
+      <button class="btn btn-primary date-filter__btn" (click)="load()">Apply Filter</button>
     </div>
-    <div class="form-field" style="margin-bottom: 0;">
-      <label>To</label>
-      <input type="date" [(ngModel)]="toDate" />
-    </div>
-    <button class="btn-primary" (click)="load()">Apply</button>
-    <a [href]="salesCsvUrl" style="margin-left: auto;">Download sales CSV</a>
   </div>
 
-  <div class="card" style="margin-bottom: 16px;" *ngIf="sales() as s">
-    <h2 style="margin-top: 0;">Sales</h2>
-    <p>
-      <strong>{{ s.totalInvoices }}</strong> invoices totalling
-      <strong>₹{{ s.totalSales | number: '1.2-2' }}</strong> in the selected range.
-    </p>
-    <table style="width: 100%; border-collapse: collapse;" *ngIf="s.dailyBreakdown.length > 0">
-      <thead>
-        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
-          <th style="padding: 6px 0;">Date</th>
-          <th style="padding: 6px 0; text-align: right;">Invoices</th>
-          <th style="padding: 6px 0; text-align: right;">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let d of s.dailyBreakdown">
-          <td style="padding: 4px 0;">{{ d.date | date: 'dd MMM yyyy' }}</td>
-          <td style="padding: 4px 0; text-align: right;">{{ d.invoiceCount }}</td>
-          <td style="padding: 4px 0; text-align: right;">₹{{ d.total | number: '1.2-2' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- Sales Summary -->
+  <section class="page-section" *ngIf="sales() as s" aria-labelledby="sales-heading">
+    <div class="card">
+      <div class="report-section-header">
+        <h2 class="report-section-title" id="sales-heading">💰 Sales Summary</h2>
+        <div class="report-kpis">
+          <div class="report-kpi">
+            <div class="report-kpi-label">Total Invoices</div>
+            <div class="report-kpi-value">{{ s.totalInvoices }}</div>
+          </div>
+          <div class="report-kpi">
+            <div class="report-kpi-label">Total Sales</div>
+            <div class="report-kpi-value text-success">₹{{ s.totalSales | number: '1.2-2' }}</div>
+          </div>
+        </div>
+      </div>
 
-  <div class="card" style="margin-bottom: 16px;" *ngIf="invoices() as inv">
-    <h2 style="margin-top: 0;">Invoices by status</h2>
-    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-      <div *ngFor="let sc of inv.statusCounts">
-        <div style="color: var(--color-text-muted); font-size: 0.85rem;">{{ sc.status }}</div>
-        <div style="font-size: 1.3rem; font-weight: 700;">{{ sc.count }}</div>
+      <table class="data-table report-table" *ngIf="s.dailyBreakdown.length > 0" aria-label="Daily sales breakdown">
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col" class="text-right">Invoices</th>
+            <th scope="col" class="text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of s.dailyBreakdown">
+            <td>{{ d.date | date: 'dd MMM yyyy' }}</td>
+            <td class="text-right">{{ d.invoiceCount }}</td>
+            <td class="text-right fw-600">₹{{ d.total | number: '1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Invoices by Status -->
+  <section class="page-section" *ngIf="invoices() as inv" aria-labelledby="invoices-heading">
+    <div class="card">
+      <h2 class="report-section-title" id="invoices-heading">📄 Invoices by Status</h2>
+      <div class="status-chips" role="list">
+        <div *ngFor="let sc of inv.statusCounts" class="status-chip" role="listitem">
+          <span class="badge" [ngClass]="statusBadgeClass(sc.status)">{{ sc.status }}</span>
+          <span class="status-chip-count fw-600">{{ sc.count }}</span>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="card" style="margin-bottom: 16px;" *ngIf="payments() as p">
-    <h2 style="margin-top: 0;">Payments by method</h2>
-    <p>Total collected: <strong>₹{{ p.totalCollected | number: '1.2-2' }}</strong></p>
-    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-      <div *ngFor="let m of p.byMethod">
-        <div style="color: var(--color-text-muted); font-size: 0.85rem;">{{ m.method }} ({{ m.count }})</div>
-        <div style="font-size: 1.1rem; font-weight: 700;">₹{{ m.total | number: '1.2-2' }}</div>
+  <!-- Payments by Method -->
+  <section class="page-section" *ngIf="payments() as p" aria-labelledby="payments-heading">
+    <div class="card">
+      <div class="report-section-header">
+        <h2 class="report-section-title" id="payments-heading">💳 Payments by Method</h2>
+        <div class="report-kpi">
+          <div class="report-kpi-label">Total Collected</div>
+          <div class="report-kpi-value text-success">₹{{ p.totalCollected | number: '1.2-2' }}</div>
+        </div>
+      </div>
+      <div class="method-chips" role="list">
+        <div *ngFor="let m of p.byMethod" class="method-chip card-sm" role="listitem">
+          <div class="method-chip__label text-muted">{{ m.method }} ({{ m.count }})</div>
+          <div class="fw-600">₹{{ m.total | number: '1.2-2' }}</div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="card" style="margin-bottom: 16px;" *ngIf="customers() as c">
-    <h2 style="margin-top: 0;">Top customers</h2>
-    <p>Total outstanding across all open invoices: <strong>₹{{ c.totalOutstanding | number: '1.2-2' }}</strong></p>
-    <table style="width: 100%; border-collapse: collapse;" *ngIf="c.topCustomers.length > 0">
-      <tbody>
-        <tr *ngFor="let tc of c.topCustomers" style="border-bottom: 1px solid var(--color-border);">
-          <td style="padding: 6px 0;">{{ tc.customerName }}</td>
-          <td style="padding: 6px 0; text-align: right; color: var(--color-text-muted);">{{ tc.invoiceCount }} invoices</td>
-          <td style="padding: 6px 0; text-align: right; font-weight: 600;">₹{{ tc.total | number: '1.2-2' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- Top Customers -->
+  <section class="page-section" *ngIf="customers() as c" aria-labelledby="customers-heading">
+    <div class="card">
+      <div class="report-section-header">
+        <h2 class="report-section-title" id="customers-heading">🏆 Top Customers</h2>
+        <div class="report-kpi">
+          <div class="report-kpi-label">Total Outstanding</div>
+          <div class="report-kpi-value text-danger">₹{{ c.totalOutstanding | number: '1.2-2' }}</div>
+        </div>
+      </div>
+      <table class="data-table report-table" *ngIf="c.topCustomers.length > 0" aria-label="Top customers">
+        <thead>
+          <tr>
+            <th scope="col">Customer</th>
+            <th scope="col" class="text-right">Invoices</th>
+            <th scope="col" class="text-right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tc of c.topCustomers">
+            <td class="fw-600">{{ tc.customerName }}</td>
+            <td class="text-right text-muted">{{ tc.invoiceCount }}</td>
+            <td class="text-right fw-600">₹{{ tc.total | number: '1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-  <div class="card" style="margin-bottom: 16px;" *ngIf="products() as pr">
-    <h2 style="margin-top: 0;">Top-selling products</h2>
-    <table style="width: 100%; border-collapse: collapse;" *ngIf="pr.topProducts.length > 0">
-      <tbody>
-        <tr *ngFor="let tp of pr.topProducts" style="border-bottom: 1px solid var(--color-border);">
-          <td style="padding: 6px 0;">{{ tp.productName }}</td>
-          <td style="padding: 6px 0; text-align: right; color: var(--color-text-muted);">{{ tp.totalQuantity }} sold</td>
-          <td style="padding: 6px 0; text-align: right; font-weight: 600;">₹{{ tp.totalAmount | number: '1.2-2' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- Top Products -->
+  <section class="page-section" *ngIf="products() as pr" aria-labelledby="products-heading">
+    <div class="card">
+      <h2 class="report-section-title" id="products-heading">📦 Top-Selling Products</h2>
+      <table class="data-table report-table" *ngIf="pr.topProducts.length > 0" aria-label="Top selling products">
+        <thead>
+          <tr>
+            <th scope="col">Product</th>
+            <th scope="col" class="text-right">Qty Sold</th>
+            <th scope="col" class="text-right">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let tp of pr.topProducts">
+            <td class="fw-600">{{ tp.productName }}</td>
+            <td class="text-right text-muted">{{ tp.totalQuantity }}</td>
+            <td class="text-right fw-600">₹{{ tp.totalAmount | number: '1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-  <div class="card" *ngIf="expenses() as e">
-    <h2 style="margin-top: 0;">Expenses</h2>
-    <p>Total: <strong>₹{{ e.totalExpenses | number: '1.2-2' }}</strong></p>
-    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-      <div *ngFor="let cat of e.byCategory">
-        <div style="color: var(--color-text-muted); font-size: 0.85rem;">{{ cat.categoryName }}</div>
-        <div style="font-size: 1.1rem; font-weight: 700;">₹{{ cat.total | number: '1.2-2' }}</div>
+  <!-- Expenses by Category -->
+  <section class="page-section" *ngIf="expenses() as e" aria-labelledby="expenses-heading">
+    <div class="card">
+      <div class="report-section-header">
+        <h2 class="report-section-title" id="expenses-heading">💸 Expenses</h2>
+        <div class="report-kpi">
+          <div class="report-kpi-label">Total Expenses</div>
+          <div class="report-kpi-value text-danger">₹{{ e.totalExpenses | number: '1.2-2' }}</div>
+        </div>
+      </div>
+      <div class="method-chips expense-chips" role="list">
+        <div *ngFor="let cat of e.byCategory" class="method-chip card-sm" role="listitem">
+          <div class="method-chip__label text-muted">{{ cat.categoryName }}</div>
+          <div class="fw-600">₹{{ cat.total | number: '1.2-2' }}</div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 </div>
+
+<style>
+/* ── Filter card ───────────────────────────────────────── */
+.filter-card {
+  margin-bottom: 24px;
+}
+.filter-card__title {
+  margin: 0 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ── Date filter row ───────────────────────────────────── */
+.date-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.date-filter__field {
+  min-width: 160px;
+  flex: 1;
+  margin-bottom: 0;
+}
+.date-filter__btn {
+  align-self: flex-end;
+}
+
+/* ── Section spacing ───────────────────────────────────── */
+.page-section {
+  margin-bottom: 24px;
+}
+
+/* ── Section header (title + KPIs side-by-side) ────────── */
+.report-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.report-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* ── KPI block ─────────────────────────────────────────── */
+.report-kpis {
+  display: flex;
+  gap: 20px;
+}
+.report-kpi {
+  text-align: right;
+}
+.report-kpi-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.report-kpi-value {
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ── Table top-margin ──────────────────────────────────── */
+.report-table {
+  margin-top: 16px;
+}
+
+/* ── Status chips ──────────────────────────────────────── */
+.status-chips {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  align-items: center;
+}
+.status-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-chip-count {
+  font-size: 18px;
+}
+
+/* ── Method / expense chips ────────────────────────────── */
+.method-chips {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.expense-chips {
+  margin-top: 16px;
+}
+.method-chip {
+  background: var(--color-surface-2);
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  min-width: 140px;
+  border: 1px solid var(--color-border);
+}
+.method-chip__label {
+  font-size: 12px;
+}
+</style>

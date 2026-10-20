@@ -3,6 +3,7 @@ package com.saasbilling.controller;
 import com.saasbilling.dto.subscription.SubscriptionDtos.ChangePlanRequest;
 import com.saasbilling.dto.subscription.SubscriptionDtos.CheckoutResponse;
 import com.saasbilling.dto.subscription.SubscriptionDtos.SubscriptionResponse;
+import com.saasbilling.dto.subscription.SubscriptionDtos.GatewayOptions;
 import com.saasbilling.service.SubscriptionService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +22,11 @@ public class SubscriptionController {
     @GetMapping
     public SubscriptionResponse get() {
         return subscriptionService.get();
+    }
+
+    @GetMapping("/gateways")
+    public GatewayOptions gateways() {
+        return subscriptionService.availableGateways();
     }
 
     @PreAuthorize("hasRole('OWNER')")

@@ -35,6 +35,7 @@ public class CustomerService {
     @Transactional
     public CustomerResponse create(CustomerRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
+        UUID branchId = TenantContext.currentBranchId();
 
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Business not found"));
@@ -46,6 +47,7 @@ public class CustomerService {
 
         Customer customer = new Customer();
         customer.setBusinessId(businessId);
+        customer.setBranchId(branchId);
         applyRequest(customer, request);
         customer = customerRepository.save(customer);
 
@@ -58,7 +60,7 @@ public class CustomerService {
     @Transactional
     public CustomerResponse update(UUID id, CustomerRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
-        Customer customer = getOwnedOrThrow(id, businessId);
+        Customer customer = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
 
         applyRequest(customer, request);
         customer = customerRepository.save(customer);
@@ -71,13 +73,14 @@ public class CustomerService {
 
     @Transactional(readOnly = true)
     public CustomerResponse getById(UUID id) {
-        Customer customer = getOwnedOrThrow(id, TenantContext.currentBusinessId());
+        Customer customer = getOwnedOrThrow(id, TenantContext.currentBusinessId(), TenantContext.currentBranchId());
         return CustomerResponse.from(customer);
     }
 
     @Transactional(readOnly = true)
     public PageResponse<CustomerResponse> search(String keyword, ActiveStatus status, Pageable pageable) {
-        Page<Customer> page = customerRepository.search(TenantContext.currentBusinessId(), keyword, status, pageable);
+        Page<Customer> page = customerRepository.searchByBranch(TenantContext.currentBusinessId(),
+                TenantContext.currentBranchId(), keyword, status, pageable);
         return PageResponse.from(page.map(CustomerResponse::from));
     }
 
@@ -90,7 +93,7 @@ public class CustomerService {
     @Transactional
     public void deactivate(UUID id) {
         UUID businessId = TenantContext.currentBusinessId();
-        Customer customer = getOwnedOrThrow(id, businessId);
+        Customer customer = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
         customer.setStatus(ActiveStatus.INACTIVE);
         customerRepository.save(customer);
 
@@ -101,7 +104,7 @@ public class CustomerService {
     @Transactional
     public void reactivate(UUID id) {
         UUID businessId = TenantContext.currentBusinessId();
-        Customer customer = getOwnedOrThrow(id, businessId);
+        Customer customer = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
         customer.setStatus(ActiveStatus.ACTIVE);
         customerRepository.save(customer);
 
@@ -110,8 +113,8 @@ public class CustomerService {
     }
 
     // -----------------------------------------------------------------
-    private Customer getOwnedOrThrow(UUID id, UUID businessId) {
-        return customerRepository.findByIdAndBusinessId(id, businessId)
+    private Customer getOwnedOrThrow(UUID id, UUID businessId, UUID branchId) {
+        return customerRepository.findByIdAndBusinessIdAndBranchId(id, businessId, branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
     }
 

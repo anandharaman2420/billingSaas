@@ -15,9 +15,17 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     Optional<Product> findByIdAndBusinessId(UUID id, UUID businessId);
 
+    Optional<Product> findByIdAndBusinessIdAndBranchId(UUID id, UUID businessId, UUID branchId);
+
+    java.util.List<Product> findByBusinessIdAndStatus(UUID businessId, ActiveStatus status);
+
+    java.util.List<Product> findByBranchIdAndStatus(UUID branchId, ActiveStatus status);
+
     boolean existsByIdAndBusinessId(UUID id, UUID businessId);
 
     long countByBusinessIdAndStatus(UUID businessId, ActiveStatus status);
+
+    long countByBranchIdAndStatus(UUID branchId, ActiveStatus status);
 
     boolean existsByBusinessIdAndSkuIgnoreCase(UUID businessId, String sku);
 
@@ -48,4 +56,36 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
               and p.stockQuantity <= p.minimumStockLevel
             """)
     Page<Product> findLowStock(@Param("businessId") UUID businessId, Pageable pageable);
+
+    @Query("""
+            select p from Product p
+            where p.businessId = :businessId and p.branchId = :branchId
+              and (:status is null or p.status = :status)
+              and (:categoryId is null or p.categoryId = :categoryId)
+              and (
+                    :keyword is null or :keyword = ''
+                    or lower(p.productName) like lower(concat('%', :keyword, '%'))
+                    or lower(coalesce(p.sku, '')) like lower(concat('%', :keyword, '%'))
+                  )
+            """)
+    Page<Product> searchByBranch(@Param("businessId") UUID businessId,
+                                  @Param("branchId") UUID branchId,
+                                  @Param("keyword") String keyword,
+                                  @Param("status") ActiveStatus status,
+                                  @Param("categoryId") UUID categoryId,
+                                  Pageable pageable);
+
+    @Query("""
+            select p from Product p
+            where p.businessId = :businessId and p.branchId = :branchId
+              and p.status = com.saasbilling.entity.ActiveStatus.ACTIVE
+              and p.stockQuantity <= p.minimumStockLevel
+            """)
+    Page<Product> findLowStockByBranch(@Param("businessId") UUID businessId,
+                                        @Param("branchId") UUID branchId,
+                                        Pageable pageable);
+
+    boolean existsByBranchIdAndSkuIgnoreCase(UUID branchId, String sku);
+
+    boolean existsByBranchIdAndSkuIgnoreCaseAndIdNot(UUID branchId, String sku, UUID id);
 }

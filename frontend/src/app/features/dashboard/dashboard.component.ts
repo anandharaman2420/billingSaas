@@ -11,6 +11,7 @@ import { DashboardSummary } from '../../core/models/dashboard.model';
   standalone: true,
   imports: [CommonModule, RouterLink],
   templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   readonly summary = signal<DashboardSummary | null>(null);

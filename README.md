@@ -1,8 +1,7 @@
-# Billing & Business Management SaaS — Phase 1
+# Billing & Business Management SaaS
 
 Multi-tenant billing/invoicing SaaS for small Indian businesses.
-**Phase 1 scope:** project architecture, database schema, authentication, and multi-tenancy foundation.
-Customers, products, invoices, payments, expenses, reports, and PDF generation are built in subsequent phases on top of this foundation.
+**Scope:** Architecture, database schema, multi-tenancy, customers, catalog, invoicing, payments, expenses, reports, subscriptions, file storage, and Point of Sale (POS) fast billing.
 
 ## Architecture
 
@@ -19,6 +18,8 @@ PostgreSQL (Flyway-managed schema)
 Every tenant-scoped table carries a `business_id` foreign key. The backend never trusts a business/tenant id
 from the client — `JwtAuthenticationFilter` extracts it from the verified JWT and stores it in `TenantContext`
 (a request-scoped thread-local), which every service/repository call must use.
+For businesses with multiple locations, `X-Branch-Id` selects an active branch; the backend verifies that it
+belongs to the authenticated business and otherwise uses the migrated default branch.
 
 ## Tech stack
 
@@ -75,6 +76,10 @@ Copy `backend/.env.example` to `backend/.env` (or export as real env vars — do
 | `JWT_ACCESS_EXPIRATION_MS` / `JWT_REFRESH_EXPIRATION_MS` | Token lifetimes (default 15 min / 7 days) |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated explicit origins (e.g. `http://localhost:4200`) — never `*` |
 | `SPRING_PROFILES_ACTIVE` | `dev` or `prod` |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Enable Razorpay checkout and signed webhooks |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Enable Stripe Checkout and signed webhooks |
+| `PLAN_PRICE_FREE`, `PLAN_PRICE_BASIC`, `PLAN_PRICE_PROFESSIONAL`, `PLAN_PRICE_BUSINESS` | Monthly plan prices in INR |
+| `PAYMENT_REMINDER_THROTTLE_DAYS` | Minimum days between invoice reminders (default 3) |
 
 ## Running the backend
 
@@ -320,17 +325,17 @@ path — everything builds inside the containers.
       it to the customer's address on file; rejects DRAFT invoices and customers with no email set
 - [x] Subscription foundation (spec section 38): a `subscriptions` table (migration `V8`) separate from
       `businesses.plan` (which stays as the fast-read copy `PlanLimits` and the rest of the app check).
-      `SubscriptionService` supports `MANUAL` plan changes only — no payment is actually collected, but the
-      seam where a real Razorpay/Stripe webhook handler plugs in is documented directly in the service
+      `SubscriptionService` supports manual changes and provider-backed checkout; paid plans only activate
+      after a signed provider webhook is verified
 - [x] `OverdueInvoiceSweepJob` — the scheduled job `InvoiceRepository#findOverdueCandidates` has been ready
       for since Phase 3 finally exists: runs daily, flips `ISSUED`/`PARTIALLY_PAID` invoices past due to
       `OVERDUE` across every active business, operating directly on repositories rather than through the
       tenant-scoped service layer (which assumes one request's `TenantContext` — a scheduled job spans
       every tenant)
 - [x] `PaymentReminderJob` (spec section 38's "Payment reminders") — daily job emailing customers a
-      due-soon nudge 2 days before an invoice's due date, and a reminder every day it's `OVERDUE`
+      due-soon nudge 2 days before an invoice's due date, with configurable throttling for repeat reminders
 - [x] Angular: "Email to customer" button on the invoice detail page; a Billing plan card on Settings
-      (OWNER-only plan switcher, clearly labeled as not collecting payment yet)
+      (OWNER-only plan management)
 - [x] Docker Compose and `.env.example` updated with the new SMTP/mail environment variables
 
 ### Phase 9 — File uploads, HSN/SAC codes, Razorpay payment gateway
@@ -358,6 +363,39 @@ path — everything builds inside the containers.
 - [x] Tests: webhook signature verification (correct secret, wrong secret, tampered body, missing
       signature, unconfigured secret), provider plan-change idempotency, checkout-refuses-when-unconfigured
 
+### Phase 10 — POS (Point of Sale) Fast Counter Billing & Stability Hardening
+- [x] Dedicated Point of Sale API (`PosService`, `PosController` on `/api/pos`):
+      - `GET /api/pos/catalog`: High-performance catalog endpoint querying active products & services with real-time stock levels, SKU, HSN/SAC codes, price, and category filtering.
+      - `POST /api/pos/checkout`: Atomic checkout accessible to all roles including `STAFF`/Cashiers. Automatically resolves/creates walk-in customers or quick counter customer records, issues invoices with sequential invoice numbers (`{PREFIX}-{YEAR}-{SEQ}`), records payment, marks status as `PAID`, and automatically decrements product stock (`stockQuantity`).
+      - `GET /api/pos/receipt/{invoiceId}`: Fast receipt endpoint for instant thermal slip reprint.
+- [x] Instant Thermal Receipt Generator (80mm width):
+      - Complete receipt layout including business header (name, address, phone, GSTIN), invoice metadata, cashier name, customer details, itemized table with rates and taxes, subtotal, CGST/SGST/IGST breakdown, payment mode, cash tendered, and change returned.
+      - Thermal printer-ready `@media print` stylesheet that isolates the receipt paper roll for slip printers.
+- [x] Angular POS Counter Terminal (`/pos`):
+      - Responsive dual-pane layout: live product grid with fast-tap cards, stock indicator badges (in stock, low stock, out of stock), and category filter chips on the left.
+      - High-speed Barcode / SKU scanner support: auto-focus search input with instant SKU match (pressing `Enter` on a barcode instantly adds the item to cart).
+      - Rapid Cart management: quick `+` / `−` quantity buttons, line discounts, bill discount, and prominent grand total banner.
+      - Quick 1-click payment triggers: **Cash (Exact)** and **Quick UPI** for instant single-click sale completion.
+      - Custom Payment Modal (`F2`): Cash note denomination presets (`₹100`, `₹200`, `₹500`, `₹1000`, `₹2000`, `Exact`), cash tendered input, and live change-to-return calculator.
+      - Keyboard shortcuts: `F2` to trigger payment, `Esc` to reset cart or dismiss modals.
+- [x] Codebase Stability & Compilation Hardening:
+      - `EmailService`: Replaced raw `ByteArrayInputStream` with Spring's `ByteArrayResource` implementing `InputStreamSource` for `MimeMessageHelper.addAttachment`.
+      - `InvoicePdfService`: Added missing OpenPDF `com.lowagie.text.pdf.draw.LineSeparator` import.
+      - `UserManagementService`: Reordered validation checks in `disable()` so `assertNotLastActiveOwner` runs prior to self-disable checks, ensuring last-owner safeguards remain strictly enforced.
+      - Frontend Angular forms: Replaced constructor parameter `fb: FormBuilder` with Angular 18's `inject(FormBuilder)` across all form components, eliminating property initialization order errors (`TS2729`).
+      - Frontend templates & imports: Fixed escaped quote issues in `settings.component.html` and normalized relative paths in `global-search.component.ts`.
+      - Unit & Integration Tests: Added `PosServiceTest` testing walk-in customer checkout, inventory stock decrement, change calculation, and catalog filtering (26 of 26 tests passing).
+
+  - **Phase 11 — Modern, User-Friendly & SEO-Optimized UI Overhaul:**
+      - **Design Tokens & System (`styles.scss`):** Comprehensive CSS custom properties for theming (`--font: Inter`, `--color-primary`, `--color-surface-2`, `--shadow-md`, `--radius-lg`, etc.), full dark mode support via `[data-theme='dark']`, button system (`.btn`, `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.btn-icon`, `.btn-sm`), status pills (`.badge-success`, `.badge-warning`, `.badge-danger`, `.badge-info`), animated skeleton loaders (`.skeleton`, `shimmer`), form grids (`.form-row`), and notification toasts.
+      - **SEO Optimization (`index.html` & `app.routes.ts`):** Complete SEO metadata (`description`, `keywords`, `robots`), Open Graph & Twitter Cards with `en_IN` locale, Schema.org `SoftwareApplication` JSON-LD structured data, preconnected Google Fonts, and route-level dynamic browser titles across every single page.
+      - **App Shell & Navigation:** Clean responsive layout with brand emblem, grouped menu categories with emojis, fast collapsible sidebar, mobile drawer overlay with hamburger menu, dark/light mode toggle with localStorage persistence, and user avatar with initials.
+      - **Auth Experience (Login & Register):** Two-column split-panel design with gradient brand showcase, value proposition checklist, structured forms with field validation hints, and accessible ARIA attributes.
+      - **Dashboard Analytics:** Modern KPI grid with colored icon badges, live shimmer skeleton loaders, quick-action navigation cards, and INR currency formatting.
+      - **Data Tables & Pagination:** Upgraded all list screens (`Customers`, `Products`, `Services`, `Invoices`, `Expenses`, `Team Users`, `Reports`) with unified `.data-table` layout, hover highlights, status badges, illustrated empty states, and styled pagination.
+      - **Forms & Search:** Standardized all forms (`customer`, `product`, `service`, `expense`, `user`, `settings`, `profile`) using `.form-row` and `.form-label`; upgraded global search with `Ctrl+K` shortcut badge, grouped result categories, and keyboard navigation.
+      - **Build Verification:** Tested with `ng build` — 100% clean compilation across all chunks.
+
 ## Known limitations (by design, for this phase)
 
 - Tokens are stored in `localStorage` on the frontend for simplicity. Consider httpOnly cookies for a
@@ -376,36 +414,31 @@ path — everything builds inside the containers.
 - Report export only covers CSV, and only for the Sales report — PDF and Excel export (spec section 19),
   and CSV for the other five reports, are straightforward additions following the same pattern in
   `ReportController` but weren't all built out to keep that phase's scope contained
-- `PaymentReminderJob` has no throttling — an `OVERDUE` invoice gets a reminder email every single day the
-  job runs, not just once. A `last_reminder_sent_at` column would fix this in a future pass
 - Global search only covers Customers/Products/Services/Invoices, not Payments/Expenses — a straightforward
   addition to `SearchService` following the same pattern
-- Razorpay integration is a scaffold, not exercised end-to-end here — needs real test-mode keys
-  (`RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`/`RAZORPAY_WEBHOOK_SECRET`) and a webhook pointed at
-  `/api/webhooks/razorpay` to verify for real. The frontend's checkout call creates a real order but does
-  **not** open Razorpay's Checkout widget (`razorpay-checkout.js`) yet — that's a small frontend addition
-  once there are real keys to test it against
-- Stripe is not implemented — `SubscriptionProvider.STRIPE` exists in the enum as a reserved value, but
-  only Razorpay has a client; a Stripe integration would follow the same `PaymentGatewayClient`-shaped
-  pattern as `RazorpayClient`
-- PlanPricing is a static hardcoded map (₹499/₹1499/₹3999 for Basic/Professional/Business) — real pricing
-  should move to configuration or a database table once actual prices are decided
+- Payment-provider flows require valid provider keys and webhook secrets; configure each provider's webhook
+  at `/api/webhooks/razorpay` or `/api/webhooks/stripe` before enabling paid checkout in production
 - Local disk file storage doesn't survive a container redeploy and isn't shared across multiple backend
   replicas — fine for a single-instance deployment (matches this project's current Docker Compose setup),
   but a real multi-instance production deployment needs the S3-compatible `FileStorageService`
   implementation this phase's abstraction was built to support
-- Backend was not compiled in this environment (no Maven/Maven-Central network access here) — run
-  `mvn clean install` locally to verify before deploying. The Dockerfiles were similarly written but not
-  build-tested here for the same reason (no Docker daemon / registry access in this sandbox) — build and
-  run `docker compose up --build` locally to verify before relying on it. Real SMTP delivery, the scheduled
-  jobs' cron timing, file uploads, and the Razorpay scaffold were not exercised end-to-end here either —
-  verify all of these locally before relying on them in production.
+- The backend unit/integration test suite and Angular production build pass locally; the migration has not
+  been exercised against a production PostgreSQL database, and real payment, SMTP, and Docker deployment
+  flows still need environment-specific end-to-end verification.
+
+### Phase 12 — Razorpay Checkout, Stripe, multi-branch support, and billing configuration
+
+- [x] Wired `razorpay-checkout.js` into the subscription plan checkout, with Stripe Checkout as a selectable
+      provider; both use signed, idempotent webhook activation and require provider credentials plus a
+      webhook secret before checkout is offered
+- [x] Added branch CRUD and switching (migration `V12`), preserving existing data in a migrated default
+      branch. Customers, catalog records, invoices, POS bills, expenses, settings, invoice numbering,
+      dashboards, reports, and payment searches are scoped to the active branch; invoice/POS documents use
+      the branch's contact and GST details
+- [x] Added `invoices.last_reminder_sent_at` and a configurable reminder cooldown (3 days by default)
+- [x] Moved plan prices into application configuration and exposed corresponding environment variables
 
 ## Next recommended phase
 
-**Phase 10: Razorpay Checkout widget + Stripe + multi-branch support** — finishing what Phase 9 scaffolded:
-wiring the actual `razorpay-checkout.js` widget into the frontend checkout flow, a parallel Stripe
-integration behind the same pattern as `RazorpayClient`, and multi-branch support (spec section 38) for
-businesses that operate more than one physical location. A `last_reminder_sent_at` column to throttle
-`PaymentReminderJob`, and moving `PlanPricing` to real configuration, fit naturally alongside this
-phase too.
+**Phase 13: Payments workspace and expanded reporting** — add a global payments list and extend report
+exports beyond the current Sales CSV, while preserving the active-branch scope already used by the APIs.

@@ -11,10 +11,12 @@ import { ApiError } from '../../../core/models/auth.model';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login.component.html',
+  styleUrl: './login.component.scss',
 })
 export class LoginComponent {
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly showPassword = signal(false);
   readonly form: FormGroup;
 
   constructor(
@@ -26,6 +28,10 @@ export class LoginComponent {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]],
     });
+  }
+
+  togglePassword(): void {
+    this.showPassword.update((val) => !val);
   }
 
   submit(): void {
@@ -43,7 +49,7 @@ export class LoginComponent {
       next: () => this.router.navigate(['/dashboard']),
       error: (err: HttpErrorResponse) => {
         const apiError = err.error as ApiError | undefined;
-        this.errorMessage.set(apiError?.message ?? 'Login failed. Please try again.');
+        this.errorMessage.set(apiError?.message ?? 'Invalid email or password. Please try again.');
         this.loading.set(false);
       },
     });

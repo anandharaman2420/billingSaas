@@ -1,63 +1,79 @@
-<div style="max-width: 960px; margin: 32px auto;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <h1 style="margin: 0;">Customers</h1>
-    <a routerLink="/customers/new" class="btn-primary" style="text-decoration: none;">+ Add customer</a>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Customers</h1>
+      <p class="text-muted" style="font-size:13px; margin-top:4px;">{{ result()?.totalElements || 0 }} total customers</p>
+    </div>
+    <a routerLink="/customers/new" class="btn btn-primary" aria-label="Add new customer">+ Add Customer</a>
+  </header>
+
+  <div class="search-bar">
+    <span class="search-icon" aria-hidden="true">🔍</span>
+    <input
+      type="search"
+      placeholder="Search by name, phone, email, or GSTIN…"
+      [(ngModel)]="keyword"
+      (ngModelChange)="onKeywordChange()"
+      aria-label="Search customers"
+    />
   </div>
 
-  <input
-    type="text"
-    placeholder="Search by name, phone, email, or GSTIN…"
-    [(ngModel)]="keyword"
-    (ngModelChange)="onKeywordChange()"
-    style="width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: var(--radius); margin-bottom: 16px;"
-  />
-
   <div class="card" style="padding: 0; overflow: hidden;">
-    <table style="width: 100%; border-collapse: collapse;">
+    <table class="data-table" role="grid" aria-label="Customer list">
       <thead>
-        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
-          <th style="padding: 12px;">Name</th>
-          <th style="padding: 12px;">Phone</th>
-          <th style="padding: 12px;">Email</th>
-          <th style="padding: 12px;">City</th>
-          <th style="padding: 12px;">Status</th>
-          <th style="padding: 12px;"></th>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Phone</th>
+          <th scope="col">Email</th>
+          <th scope="col">City</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let customer of result()?.content" style="border-bottom: 1px solid var(--color-border);">
-          <td style="padding: 12px;">
-            <a [routerLink]="['/customers', customer.id]">{{ customer.customerName }}</a>
+        <tr *ngFor="let customer of result()?.content">
+          <td>
+            <a [routerLink]="['/customers', customer.id]" class="fw-600">{{ customer.customerName }}</a>
           </td>
-          <td style="padding: 12px;">{{ customer.phone || '—' }}</td>
-          <td style="padding: 12px;">{{ customer.email || '—' }}</td>
-          <td style="padding: 12px;">{{ customer.city || '—' }}</td>
-          <td style="padding: 12px;">{{ customer.status }}</td>
-          <td style="padding: 12px; text-align: right;">
-            <button *ngIf="customer.status === 'ACTIVE'" (click)="deactivate(customer)" style="cursor: pointer;">
+          <td class="text-muted">{{ customer.phone || '—' }}</td>
+          <td class="text-muted">{{ customer.email || '—' }}</td>
+          <td class="text-muted">{{ customer.city || '—' }}</td>
+          <td>
+            <span class="badge" [ngClass]="customer.status === 'ACTIVE' ? 'badge-success' : 'badge-neutral'">
+              {{ customer.status }}
+            </span>
+          </td>
+          <td class="table-actions">
+            <button *ngIf="customer.status === 'ACTIVE'" class="btn btn-secondary btn-sm" (click)="deactivate(customer)">
               Deactivate
             </button>
-            <button *ngIf="customer.status === 'INACTIVE'" (click)="reactivate(customer)" style="cursor: pointer;">
+            <button *ngIf="customer.status === 'INACTIVE'" class="btn btn-primary btn-sm" (click)="reactivate(customer)">
               Reactivate
             </button>
           </td>
         </tr>
         <tr *ngIf="!loading() && result()?.content?.length === 0">
-          <td colspan="6" style="padding: 24px; text-align: center; color: var(--color-text-muted);">
-            No customers found.
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">👥</div>
+              <h3>No customers found</h3>
+              <p>Add your first customer to get started.</p>
+              <a routerLink="/customers/new" class="btn btn-primary btn-sm">+ Add Customer</a>
+            </div>
           </td>
+        </tr>
+        <tr *ngIf="loading()">
+          <td colspan="6" style="padding: 32px; text-align:center; color: var(--color-text-muted);">Loading…</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
-    <span style="color: var(--color-text-muted);">
-      {{ result()?.totalElements || 0 }} total
-    </span>
-    <div style="display: flex; gap: 8px;">
-      <button (click)="prevPage()" [disabled]="result()?.first">Previous</button>
-      <button (click)="nextPage()" [disabled]="result()?.last">Next</button>
+  <div class="pagination">
+    <span class="pagination-info">{{ result()?.totalElements || 0 }} customers</span>
+    <div class="pagination-controls">
+      <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="result()?.first" aria-label="Previous page">← Previous</button>
+      <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="result()?.last" aria-label="Next page">Next →</button>
     </div>
   </div>
 </div>

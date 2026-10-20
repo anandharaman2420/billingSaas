@@ -36,6 +36,14 @@ public final class TenantContext {
         return get().businessId();
     }
 
+    public static UUID currentBranchId() {
+        UUID branchId = get().branchId();
+        if (branchId == null) {
+            throw new IllegalStateException("No active branch is selected for this request");
+        }
+        return branchId;
+    }
+
     public static UUID currentUserId() {
         return get().userId();
     }
@@ -44,6 +52,9 @@ public final class TenantContext {
         CURRENT.remove();
     }
 
-    public record AuthenticatedPrincipal(UUID userId, UUID businessId, String email, String role) {
+    public record AuthenticatedPrincipal(UUID userId, UUID businessId, String email, String role, UUID branchId) {
+        public AuthenticatedPrincipal(UUID userId, UUID businessId, String email, String role) {
+            this(userId, businessId, email, role, null);
+        }
     }
 }

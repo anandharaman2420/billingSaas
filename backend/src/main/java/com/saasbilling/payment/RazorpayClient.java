@@ -44,7 +44,7 @@ public class RazorpayClient {
     }
 
     public boolean isConfigured() {
-        return !keyId.isBlank() && !keySecret.isBlank();
+        return !keyId.isBlank() && !keySecret.isBlank() && !webhookSecret.isBlank();
     }
 
     public String getKeyId() {

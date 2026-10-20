@@ -45,7 +45,8 @@ public class PaymentService {
     public PaymentResponse record(PaymentRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
 
-        Invoice invoice = invoiceRepository.findByIdAndBusinessId(request.invoiceId(), businessId)
+        Invoice invoice = invoiceRepository.findByIdAndBusinessIdAndBranchId(
+                        request.invoiceId(), businessId, TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
 
         assertPayable(invoice);
@@ -80,7 +81,8 @@ public class PaymentService {
     public PaymentResponse voidPayment(UUID id, VoidPaymentRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
 
-        Payment payment = paymentRepository.findByIdAndBusinessId(id, businessId)
+        Payment payment = paymentRepository.findByIdAndBusinessIdAndBranchId(
+                        id, businessId, TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
 
         if (payment.isVoided()) {
@@ -102,7 +104,8 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public PaymentResponse getById(UUID id) {
-        Payment payment = paymentRepository.findByIdAndBusinessId(id, TenantContext.currentBusinessId())
+        Payment payment = paymentRepository.findByIdAndBusinessIdAndBranchId(
+                        id, TenantContext.currentBusinessId(), TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
         return PaymentResponse.from(payment);
     }
@@ -113,7 +116,7 @@ public class PaymentService {
         // Confirms tenant ownership of the invoice before returning any
         // payments against it - the payment query itself isn't
         // business-scoped, so this check is what makes the call safe.
-        invoiceRepository.findByIdAndBusinessId(invoiceId, businessId)
+        invoiceRepository.findByIdAndBusinessIdAndBranchId(invoiceId, businessId, TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
 
         return paymentRepository.findByInvoiceIdAndVoidedFalseOrderByPaymentDateAsc(invoiceId)
@@ -123,8 +126,9 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public PageResponse<PaymentResponse> search(UUID invoiceId, UUID customerId, PaymentMethod method,
                                                  LocalDate fromDate, LocalDate toDate, Pageable pageable) {
-        Page<Payment> page = paymentRepository.search(
-                TenantContext.currentBusinessId(), invoiceId, customerId, method, fromDate, toDate, false, pageable);
+        Page<Payment> page = paymentRepository.searchByBranch(
+                TenantContext.currentBusinessId(), TenantContext.currentBranchId(), invoiceId, customerId,
+                method, fromDate, toDate, false, pageable);
         return PageResponse.from(page.map(PaymentResponse::from));
     }
 

@@ -85,4 +85,15 @@ export class InvoiceListComponent implements OnInit {
         return 'var(--color-text)';
     }
   }
+
+  invoiceStatusClass(status: string): string {
+    switch (status) {
+      case 'PAID': return 'badge-success';
+      case 'PARTIALLY_PAID': return 'badge-warning';
+      case 'OVERDUE': return 'badge-danger';
+      case 'CANCELLED': return 'badge-neutral';
+      case 'DRAFT': return 'badge-info';
+      default: return 'badge-neutral';
+    }
+  }
 }

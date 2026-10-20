@@ -8,10 +8,12 @@ export const routes: Routes = [
 
   {
     path: 'login',
+    title: 'Sign In – BillingSaaS',
     loadComponent: () => import('./features/auth/login/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'register',
+    title: 'Register Business – BillingSaaS',
     loadComponent: () =>
       import('./features/auth/register/register.component').then((m) => m.RegisterComponent),
   },
@@ -23,164 +25,183 @@ export const routes: Routes = [
     children: [
       {
         path: 'dashboard',
+        title: 'Dashboard – BillingSaaS',
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
+      {
+        path: 'pos',
+        title: 'POS Billing Counter – BillingSaaS',
+        loadComponent: () =>
+          import('./features/pos/pos.component').then((m) => m.PosComponent),
+      },
 
-      // --- Customers: view/create/edit open to all roles (STAFF needs
-      // this to bill a walk-in customer); deactivate is gated server-side. ---
+      // Customers
       {
         path: 'customers',
+        title: 'Customers – BillingSaaS',
         loadComponent: () =>
           import('./features/customers/list/customer-list.component').then((m) => m.CustomerListComponent),
       },
       {
         path: 'customers/new',
+        title: 'New Customer – BillingSaaS',
         loadComponent: () =>
           import('./features/customers/form/customer-form.component').then((m) => m.CustomerFormComponent),
       },
       {
         path: 'customers/:id',
+        title: 'Edit Customer – BillingSaaS',
         loadComponent: () =>
           import('./features/customers/form/customer-form.component').then((m) => m.CustomerFormComponent),
       },
 
-      // --- Products: everyone can view (needed to build an invoice);
-      // create/edit restricted to OWNER/ADMIN/MANAGER, enforced by the
-      // roleGuard here for UX and independently by the backend's
-      // @PreAuthorize, which is the actual security boundary. ---
+      // Products
       {
         path: 'products',
+        title: 'Products – BillingSaaS',
         loadComponent: () =>
           import('./features/products/list/product-list.component').then((m) => m.ProductListComponent),
       },
       {
         path: 'products/new',
+        title: 'New Product – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/products/form/product-form.component').then((m) => m.ProductFormComponent),
       },
       {
         path: 'products/:id',
+        title: 'Edit Product – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/products/form/product-form.component').then((m) => m.ProductFormComponent),
       },
 
-      // --- Invoices: all roles view/create/edit-while-draft (STAFF's
-      // core job is billing); issue and cancel are gated server-side
-      // via @PreAuthorize, and the roleGuard here just avoids showing
-      // buttons a STAFF user's click would get rejected. ---
+      // Invoices
       {
         path: 'invoices',
+        title: 'Invoices – BillingSaaS',
         loadComponent: () =>
           import('./features/invoices/list/invoice-list.component').then((m) => m.InvoiceListComponent),
       },
       {
         path: 'invoices/new',
+        title: 'New Invoice – BillingSaaS',
         loadComponent: () =>
           import('./features/invoices/form/invoice-form.component').then((m) => m.InvoiceFormComponent),
       },
       {
         path: 'invoices/:id',
+        title: 'Invoice Details – BillingSaaS',
         loadComponent: () =>
           import('./features/invoices/detail/invoice-detail.component').then((m) => m.InvoiceDetailComponent),
       },
       {
         path: 'invoices/:id/edit',
+        title: 'Edit Invoice – BillingSaaS',
         loadComponent: () =>
           import('./features/invoices/form/invoice-form.component').then((m) => m.InvoiceFormComponent),
       },
 
-      // --- Services: same role policy as products. ---
+      // Services
       {
         path: 'services',
+        title: 'Services – BillingSaaS',
         loadComponent: () =>
           import('./features/services/list/service-list.component').then((m) => m.ServiceListComponent),
       },
       {
         path: 'services/new',
+        title: 'New Service – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/services/form/service-form.component').then((m) => m.ServiceFormComponent),
       },
       {
         path: 'services/:id',
+        title: 'Edit Service – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/services/form/service-form.component').then((m) => m.ServiceFormComponent),
       },
 
-      // --- Expenses: business overhead data, restricted to
-      // OWNER/ADMIN/MANAGER both here and server-side. ---
+      // Expenses
       {
         path: 'expenses',
+        title: 'Expenses – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/expenses/list/expense-list.component').then((m) => m.ExpenseListComponent),
       },
       {
         path: 'expenses/new',
+        title: 'New Expense – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/expenses/form/expense-form.component').then((m) => m.ExpenseFormComponent),
       },
       {
         path: 'expenses/:id',
+        title: 'Edit Expense – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/expenses/form/expense-form.component').then((m) => m.ExpenseFormComponent),
       },
 
-      // --- Reports: same role policy as Expenses. ---
+      // Reports
       {
         path: 'reports',
+        title: 'Reports & Analytics – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/reports/reports.component').then((m) => m.ReportsComponent),
       },
 
-      // --- Users: team management restricted to OWNER/ADMIN server-side
-      // (UserController @PreAuthorize); roleGuard here just keeps STAFF
-      // from landing on a screen every action on which would be rejected. ---
+      // Users
       {
         path: 'users',
+        title: 'Team Members – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN')],
         loadComponent: () =>
           import('./features/users/list/user-list.component').then((m) => m.UserListComponent),
       },
       {
         path: 'users/new',
+        title: 'New Team Member – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN')],
         loadComponent: () =>
           import('./features/users/form/user-form.component').then((m) => m.UserFormComponent),
       },
       {
         path: 'users/:id',
+        title: 'Edit Team Member – BillingSaaS',
         canActivate: [roleGuard('OWNER', 'ADMIN')],
         loadComponent: () =>
           import('./features/users/form/user-form.component').then((m) => m.UserFormComponent),
       },
 
-      // --- Settings: business profile + invoice settings, OWNER/ADMIN only. ---
+      // Settings
       {
         path: 'settings',
-        canActivate: [roleGuard('OWNER', 'ADMIN')],
+        title: 'Business Settings – BillingSaaS',
+        canActivate: [roleGuard('OWNER', 'ADMIN', 'MANAGER')],
         loadComponent: () =>
           import('./features/settings/settings.component').then((m) => m.SettingsComponent),
       },
 
-      // --- My profile: every authenticated user, any role. ---
+      // Profile
       {
         path: 'profile',
+        title: 'My Profile – BillingSaaS',
         loadComponent: () =>
           import('./features/profile/profile.component').then((m) => m.ProfileComponent),
       },
 
-      // Future phases plug in here.
-
+      // Forbidden
       {
         path: 'forbidden',
+        title: '403 Forbidden – BillingSaaS',
         loadComponent: () =>
           import('./shared/components/forbidden/forbidden.component').then((m) => m.ForbiddenComponent),
       },

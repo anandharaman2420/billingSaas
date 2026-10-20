@@ -37,6 +37,7 @@ public class ExpenseService {
 
         Expense expense = new Expense();
         expense.setBusinessId(businessId);
+        expense.setBranchId(TenantContext.currentBranchId());
         expense.setRecordedByUserId(TenantContext.currentUserId());
         applyRequest(expense, request);
         expense = expenseRepository.save(expense);
@@ -50,7 +51,7 @@ public class ExpenseService {
     @Transactional
     public ExpenseResponse update(UUID id, ExpenseRequest request) {
         UUID businessId = TenantContext.currentBusinessId();
-        Expense expense = getOwnedOrThrow(id, businessId);
+        Expense expense = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
 
         applyRequest(expense, request);
         expense = expenseRepository.save(expense);
@@ -63,12 +64,13 @@ public class ExpenseService {
 
     @Transactional(readOnly = true)
     public ExpenseResponse getById(UUID id) {
-        return ExpenseResponse.from(getOwnedOrThrow(id, TenantContext.currentBusinessId()));
+        return ExpenseResponse.from(getOwnedOrThrow(id, TenantContext.currentBusinessId(), TenantContext.currentBranchId()));
     }
 
     @Transactional(readOnly = true)
     public PageResponse<ExpenseResponse> search(String keyword, UUID categoryId, LocalDate fromDate, LocalDate toDate, Pageable pageable) {
-        Page<Expense> page = expenseRepository.search(TenantContext.currentBusinessId(), keyword, categoryId, fromDate, toDate, pageable);
+        Page<Expense> page = expenseRepository.searchByBranch(TenantContext.currentBusinessId(),
+                TenantContext.currentBranchId(), keyword, categoryId, fromDate, toDate, pageable);
         return PageResponse.from(page.map(ExpenseResponse::from));
     }
 
@@ -82,7 +84,7 @@ public class ExpenseService {
     @Transactional
     public void delete(UUID id) {
         UUID businessId = TenantContext.currentBusinessId();
-        Expense expense = getOwnedOrThrow(id, businessId);
+        Expense expense = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
         expenseRepository.delete(expense);
 
         auditLogService.record(businessId, TenantContext.currentUserId(), "EXPENSE_DELETED",
@@ -92,7 +94,7 @@ public class ExpenseService {
     @Transactional
     public ExpenseResponse uploadAttachment(UUID id, MultipartFile file) {
         UUID businessId = TenantContext.currentBusinessId();
-        Expense expense = getOwnedOrThrow(id, businessId);
+        Expense expense = getOwnedOrThrow(id, businessId, TenantContext.currentBranchId());
 
         FileStorageService.StoredFile stored = fileStorageService.store(businessId, "expense-attachments", file);
         expense.setAttachmentUrl(stored.url());
@@ -105,8 +107,8 @@ public class ExpenseService {
     }
 
     // -----------------------------------------------------------------
-    private Expense getOwnedOrThrow(UUID id, UUID businessId) {
-        return expenseRepository.findByIdAndBusinessId(id, businessId)
+    private Expense getOwnedOrThrow(UUID id, UUID businessId, UUID branchId) {
+        return expenseRepository.findByIdAndBusinessIdAndBranchId(id, businessId, branchId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found"));
     }
 

@@ -18,11 +18,12 @@ public class BusinessSettingsController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER')")
     public BusinessSettingsResponse get() {
         return businessSettingsService.get();
     }
 
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER')")
     @PutMapping
     public BusinessSettingsResponse update(@Valid @RequestBody BusinessSettingsRequest request) {
         return businessSettingsService.update(request);

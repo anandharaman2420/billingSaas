@@ -41,9 +41,27 @@ public class BusinessSettingsService {
                             + " - doing so risks colliding with an already-issued invoice number");
         }
 
+        if (request.posNextSequence() > 0 && request.posNextSequence() < settings.getPosNextSequence()) {
+            throw new ForbiddenOperationException(
+                    "Next POS bill sequence cannot be lowered below " + settings.getPosNextSequence()
+                            + " - doing so risks colliding with an already-issued bill number");
+        }
+
         settings.setInvoicePrefix(request.invoicePrefix());
         settings.setInvoiceNumberFormat(request.invoiceNumberFormat());
         settings.setInvoiceNextSequence(request.invoiceNextSequence());
+        settings.setInvoiceTemplate(request.invoiceTemplate() != null ? request.invoiceTemplate() : "CLASSIC");
+
+        if (request.posPrefix() != null && !request.posPrefix().isBlank()) {
+            settings.setPosPrefix(request.posPrefix().trim());
+        }
+        if (request.posNumberFormat() != null && !request.posNumberFormat().isBlank()) {
+            settings.setPosNumberFormat(request.posNumberFormat().trim());
+        }
+        if (request.posNextSequence() > 0) {
+            settings.setPosNextSequence(request.posNextSequence());
+        }
+
         settings.setFinancialYearStartMonth(request.financialYearStartMonth());
         settings.setDefaultDueDays(request.defaultDueDays());
         settings.setCurrency(request.currency());
@@ -61,7 +79,7 @@ public class BusinessSettingsService {
     }
 
     private BusinessSettings getOwnSettings() {
-        return businessSettingsRepository.findByBusinessId(TenantContext.currentBusinessId())
+        return businessSettingsRepository.findByBranchId(TenantContext.currentBranchId())
                 .orElseThrow(() -> new ResourceNotFoundException("Business settings not found"));
     }
 }

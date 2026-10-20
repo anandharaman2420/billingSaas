@@ -55,8 +55,15 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(401, "Unauthorized", "Invalid or expired token", request.getRequestURI()));
     }
 
-    @ExceptionHandler({ForbiddenOperationException.class, AccessDeniedException.class})
-    public ResponseEntity<ApiError> handleForbidden(RuntimeException ex, HttpServletRequest request) {
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ResponseEntity<ApiError> handleForbiddenOperation(ForbiddenOperationException ex,
+                                                              HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiError.of(403, "Business Rule Violation", ex.getMessage(), request.getRequestURI()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiError.of(403, "Forbidden", "You do not have permission to perform this action",
                         request.getRequestURI()));

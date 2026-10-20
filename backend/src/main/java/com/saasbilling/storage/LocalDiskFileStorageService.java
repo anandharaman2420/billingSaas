@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -85,6 +86,20 @@ public class LocalDiskFileStorageService implements FileStorageService {
             throw new IllegalArgumentException("Invalid file path");
         }
         return resolved;
+    }
+
+    @Override
+    public Optional<byte[]> read(UUID businessId, String category, String fileName) {
+        Path path = resolveForRead(businessId, category, fileName);
+        if (!Files.isRegularFile(path)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Files.readAllBytes(path));
+        } catch (IOException e) {
+            log.error("Failed to read stored file from {}", path, e);
+            throw new IllegalStateException("Failed to read stored file", e);
+        }
     }
 
     private String sanitize(String segment) {

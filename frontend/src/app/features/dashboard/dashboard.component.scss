@@ -1,0 +1,126 @@
+// ─── Dashboard subtitle ───────────────────────────────────────────────────────
+.subtitle {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+// ─── KPI Stats Grid ───────────────────────────────────────────────────────────
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+// Skeleton loading overrides inside stat-card
+.skeleton-label {
+  width: 60%;
+  height: 12px;
+  margin-bottom: 12px;
+}
+
+.skeleton-value {
+  height: 28px;
+  width: 80%;
+  margin-bottom: 6px;
+}
+
+// ─── Stat Icon ────────────────────────────────────────────────────────────────
+.stat-icon {
+  font-size: 22px;
+  margin-bottom: 4px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &--primary { background: var(--color-primary-light); }
+  &--success  { background: var(--color-success-light); }
+  &--danger   { background: var(--color-danger-light); }
+  &--warning  { background: var(--color-warning-light); }
+  &--info     { background: var(--color-info-light); }
+}
+
+// ─── Stat Label & Value ───────────────────────────────────────────────────────
+.stat-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+
+  &--success { color: var(--color-success); }
+  &--danger  { color: var(--color-danger); }
+}
+
+// ─── Quick Actions ────────────────────────────────────────────────────────────
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 14px;
+  color: var(--color-text);
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-lg);
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    background: var(--color-surface-2);
+    text-decoration: none;
+    color: inherit;
+  }
+}
+
+.quick-action-icon {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.quick-action-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 3px;
+}
+
+.quick-action-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

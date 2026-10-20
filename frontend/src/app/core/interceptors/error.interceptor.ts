@@ -23,7 +23,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
       if (error.status === 401 && !isAuthEndpoint) {
         authService.logout();
-      } else if (error.status === 403) {
+      } else if (error.status === 403 && error.error?.error === 'Forbidden') {
         router.navigate(['/forbidden']);
       }
 

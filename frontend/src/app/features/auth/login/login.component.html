@@ -1,31 +1,167 @@
-<div style="max-width: 400px; margin: 80px auto;" class="card">
-  <h1 style="margin-top: 0;">Sign in</h1>
+<div class="auth-page">
+  <div class="auth-container">
+    <!-- Left: Brand Showcase Panel (Desktop) -->
+    <section class="auth-brand" aria-label="BillingSaaS features">
+      <div class="auth-brand-content">
+        <div class="auth-brand-header">
+          <div class="auth-brand-logo">₹</div>
+          <div class="auth-brand-names">
+            <span class="auth-brand-title">BillingSaaS</span>
+            <span class="auth-brand-badge">GST Ready</span>
+          </div>
+        </div>
 
-  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+        <div class="auth-brand-hero">
+          <h2 class="auth-hero-heading">Modern Billing &amp; Counter POS Built for Growth</h2>
+          <p class="auth-hero-desc">
+            The all-in-one platform to generate GST invoices, manage inventory, speed up counter checkout, and track business health.
+          </p>
+        </div>
 
-  <form [formGroup]="form" (ngSubmit)="submit()">
-    <div class="form-field">
-      <label for="email">Email</label>
-      <input id="email" type="email" formControlName="email" autocomplete="email" />
-      <span class="form-error" *ngIf="form.get('email')?.touched && form.get('email')?.invalid">
-        A valid email is required
-      </span>
-    </div>
+        <ul class="auth-feature-list">
+          <li class="auth-feature-item">
+            <span class="auth-feature-icon">⚡</span>
+            <div>
+              <strong>POS Counter Billing</strong>
+              <span>Barcode scanner, quick tender, and thermal receipts</span>
+            </div>
+          </li>
+          <li class="auth-feature-item">
+            <span class="auth-feature-icon">📄</span>
+            <div>
+              <strong>GST Compliant Invoices</strong>
+              <span>Automated CGST, SGST, IGST calculation and HSN/SAC codes</span>
+            </div>
+          </li>
+          <li class="auth-feature-item">
+            <span class="auth-feature-icon">👥</span>
+            <div>
+              <strong>Multi-User Permissions</strong>
+              <span>Assign roles for Owners, Managers, Cashiers, and Staff</span>
+            </div>
+          </li>
+          <li class="auth-feature-item">
+            <span class="auth-feature-icon">📈</span>
+            <div>
+              <strong>Insights &amp; Tax Reports</strong>
+              <span>Instant sales summaries, daily breakdowns, and CSV export</span>
+            </div>
+          </li>
+        </ul>
 
-    <div class="form-field">
-      <label for="password">Password</label>
-      <input id="password" type="password" formControlName="password" autocomplete="current-password" />
-      <span class="form-error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
-        Password is required
-      </span>
-    </div>
+        <div class="auth-trust-badge">
+          <span class="auth-trust-icon">🇮🇳</span>
+          <span>Crafted specifically for Indian retail, wholesale &amp; service businesses</span>
+        </div>
+      </div>
+    </section>
 
-    <button type="submit" class="btn-primary" [disabled]="loading()" style="width: 100%;">
-      {{ loading() ? 'Signing in…' : 'Sign in' }}
-    </button>
-  </form>
+    <!-- Right: Login Form Panel -->
+    <main class="auth-form-panel">
+      <div class="auth-form-inner">
+        <!-- Mobile Brand Header -->
+        <div class="auth-mobile-header">
+          <div class="auth-mobile-logo">₹</div>
+          <h2 class="auth-mobile-title">BillingSaaS</h2>
+          <p class="auth-mobile-tagline">GST Invoicing &amp; Counter Billing</p>
+        </div>
 
-  <p style="margin-top: 16px; text-align: center;">
-    New business? <a routerLink="/register">Register here</a>
-  </p>
+        <div class="auth-form-heading">
+          <h1 class="auth-title">Welcome back</h1>
+          <p class="auth-subtitle">Sign in to manage your invoices and store operations</p>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="alert alert-error" role="alert" *ngIf="errorMessage()">
+          <span class="alert-icon" aria-hidden="true">⚠️</span>
+          <div class="alert-content">{{ errorMessage() }}</div>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="auth-form">
+          <!-- Email Field -->
+          <div class="form-field">
+            <label for="email" class="form-label">Email address</label>
+            <div class="input-with-icon">
+              <span class="input-icon" aria-hidden="true">✉️</span>
+              <input
+                id="email"
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="name@business.com"
+                class="form-input"
+                [attr.aria-invalid]="form.get('email')?.touched && form.get('email')?.invalid"
+                aria-describedby="email-error"
+              />
+            </div>
+            <span
+              id="email-error"
+              class="form-error"
+              *ngIf="form.get('email')?.touched && form.get('email')?.invalid"
+              role="alert"
+            >
+              Please enter a valid email address
+            </span>
+          </div>
+
+          <!-- Password Field -->
+          <div class="form-field">
+            <div class="form-label-row">
+              <label for="password" class="form-label">Password</label>
+            </div>
+            <div class="input-with-icon">
+              <span class="input-icon" aria-hidden="true">🔒</span>
+              <input
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                placeholder="Enter your password"
+                class="form-input"
+                [attr.aria-invalid]="form.get('password')?.touched && form.get('password')?.invalid"
+                aria-describedby="password-error"
+              />
+              <button
+                type="button"
+                class="password-toggle-btn"
+                (click)="togglePassword()"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                tabindex="-1"
+              >
+                {{ showPassword() ? '👁️' : '🙈' }}
+              </button>
+            </div>
+            <span
+              id="password-error"
+              class="form-error"
+              *ngIf="form.get('password')?.touched && form.get('password')?.invalid"
+              role="alert"
+            >
+              Password is required
+            </span>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            class="btn btn-primary auth-submit-btn"
+            [disabled]="loading()"
+            [attr.aria-busy]="loading()"
+          >
+            <span *ngIf="loading()" class="btn-spinner" aria-hidden="true"></span>
+            <span>{{ loading() ? 'Signing in…' : 'Sign In to Account →' }}</span>
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span>or</span>
+        </div>
+
+        <p class="auth-switch">
+          New to BillingSaaS?
+          <a routerLink="/register" class="auth-link fw-600">Create a free account</a>
+        </p>
+      </div>
+    </main>
+  </div>
 </div>

@@ -17,6 +17,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
 
     Optional<Expense> findByIdAndBusinessId(UUID id, UUID businessId);
 
+    Optional<Expense> findByIdAndBusinessIdAndBranchId(UUID id, UUID businessId, UUID branchId);
+
     @Query("""
             select e from Expense e
             where e.businessId = :businessId
@@ -32,8 +34,27 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
                           @Param("toDate") LocalDate toDate,
                           Pageable pageable);
 
+    @Query("""
+            select e from Expense e
+            where e.businessId = :businessId and e.branchId = :branchId
+              and (:categoryId is null or e.categoryId = :categoryId)
+              and (:fromDate is null or e.expenseDate >= :fromDate)
+              and (:toDate is null or e.expenseDate <= :toDate)
+              and (:keyword is null or :keyword = '' or lower(e.description) like lower(concat('%', :keyword, '%')))
+            """)
+    Page<Expense> searchByBranch(@Param("businessId") UUID businessId,
+                                  @Param("branchId") UUID branchId,
+                                  @Param("keyword") String keyword,
+                                  @Param("categoryId") UUID categoryId,
+                                  @Param("fromDate") LocalDate fromDate,
+                                  @Param("toDate") LocalDate toDate,
+                                  Pageable pageable);
+
     @Query("select coalesce(sum(e.amount), 0) from Expense e where e.businessId = :businessId and e.expenseDate >= :fromDate and e.expenseDate <= :toDate")
     BigDecimal sumInRange(@Param("businessId") UUID businessId, @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
+
+    @Query("select coalesce(sum(e.amount), 0) from Expense e where e.branchId = :branchId and e.expenseDate >= :fromDate and e.expenseDate <= :toDate")
+    BigDecimal sumInRangeByBranch(@Param("branchId") UUID branchId, @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 
     @Query("""
             select e.categoryId as categoryId, coalesce(sum(e.amount), 0) as total
@@ -44,6 +65,16 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
     List<CategoryTotal> sumByCategoryInRange(@Param("businessId") UUID businessId,
                                               @Param("fromDate") LocalDate fromDate,
                                               @Param("toDate") LocalDate toDate);
+
+    @Query("""
+            select e.categoryId as categoryId, coalesce(sum(e.amount), 0) as total
+            from Expense e
+            where e.branchId = :branchId and e.expenseDate >= :fromDate and e.expenseDate <= :toDate
+            group by e.categoryId
+            """)
+    List<CategoryTotal> sumByCategoryInRangeByBranch(@Param("branchId") UUID branchId,
+                                                      @Param("fromDate") LocalDate fromDate,
+                                                      @Param("toDate") LocalDate toDate);
 
     interface CategoryTotal {
         UUID getCategoryId();

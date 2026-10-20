@@ -1,41 +1,50 @@
-<div style="max-width: 480px; margin: 32px auto;" class="card">
-  <h1 style="margin-top: 0;">{{ userId ? 'Edit team member' : 'Add team member' }}</h1>
+<div class="page page-sm">
+  <header class="page-header">
+    <h1>{{ userId ? 'Edit Team Member' : 'Add Team Member' }}</h1>
+    <a routerLink="/users" class="btn btn-secondary btn-sm" aria-label="Back to team list">← Back to Team</a>
+  </header>
 
-  <div class="alert-error" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+  <div class="card">
+    <div class="alert-error" *ngIf="errorMessage()" role="alert">{{ errorMessage() }}</div>
 
-  <form [formGroup]="form" (ngSubmit)="submit()">
-    <div class="form-field">
-      <label>Full name *</label>
-      <input formControlName="fullName" />
-    </div>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-field">
+        <label class="form-label">Full Name *</label>
+        <input formControlName="fullName" placeholder="e.g. Rahul Verma" />
+      </div>
 
-    <div class="form-field">
-      <label>Email *</label>
-      <input formControlName="email" type="email" />
-    </div>
+      <div class="form-field">
+        <label class="form-label">Email *</label>
+        <input formControlName="email" type="email" placeholder="rahul@company.com" />
+      </div>
 
-    <div class="form-field" *ngIf="!userId">
-      <label>Initial password *</label>
-      <input formControlName="password" type="password" autocomplete="new-password" />
-      <span class="form-error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
-        Minimum 8 characters
-      </span>
-    </div>
+      <div class="form-field" *ngIf="!userId">
+        <label class="form-label">Initial Password *</label>
+        <input formControlName="password" type="password" autocomplete="new-password" placeholder="At least 8 characters" />
+        <span class="form-error" *ngIf="form.get('password')?.touched && form.get('password')?.invalid">
+          Minimum 8 characters
+        </span>
+      </div>
 
-    <div class="form-field">
-      <label>Phone</label>
-      <input formControlName="phone" />
-    </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Phone</label>
+          <input formControlName="phone" placeholder="9876543210" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Role *</label>
+          <select formControlName="role">
+            <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+          </select>
+        </div>
+      </div>
 
-    <div class="form-field">
-      <label>Role *</label>
-      <select formControlName="role">
-        <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
-      </select>
-    </div>
-
-    <button type="submit" class="btn-primary" [disabled]="loading()">
-      {{ loading() ? 'Saving…' : 'Save' }}
-    </button>
-  </form>
+      <div class="btn-group" style="margin-top: 8px;">
+        <button type="submit" class="btn btn-primary" [disabled]="loading()">
+          {{ loading() ? 'Saving…' : 'Save Member' }}
+        </button>
+        <a routerLink="/users" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
 </div>

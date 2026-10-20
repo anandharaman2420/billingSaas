@@ -23,13 +23,13 @@ public class BusinessProfileController {
         return businessProfileService.get();
     }
 
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER')")
     @PutMapping
     public BusinessProfileResponse update(@Valid @RequestBody BusinessProfileRequest request) {
         return businessProfileService.update(request);
     }
 
-    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('OWNER', 'ADMIN', 'MANAGER')")
     @PostMapping(value = "/logo", consumes = "multipart/form-data")
     public BusinessProfileResponse uploadLogo(@RequestParam("file") MultipartFile file) {
         return businessProfileService.uploadLogo(file);

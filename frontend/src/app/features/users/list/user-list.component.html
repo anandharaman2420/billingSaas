@@ -1,48 +1,65 @@
-<div style="max-width: 960px; margin: 32px auto;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <h1 style="margin: 0;">Team members</h1>
-    <a routerLink="/users/new" class="btn-primary" style="text-decoration: none;">+ Add team member</a>
-  </div>
+<div class="page">
+  <header class="page-header">
+    <div>
+      <h1>Team Members</h1>
+      <p class="text-muted" style="font-size:13px; margin-top:4px;">{{ result()?.totalElements || 0 }} total users</p>
+    </div>
+    <a routerLink="/users/new" class="btn btn-primary" aria-label="Add new team member">+ Add Member</a>
+  </header>
 
   <div class="card" style="padding: 0; overflow: hidden;">
-    <table style="width: 100%; border-collapse: collapse;">
+    <table class="data-table" role="grid" aria-label="Team members list">
       <thead>
-        <tr style="text-align: left; border-bottom: 1px solid var(--color-border);">
-          <th style="padding: 12px;">Name</th>
-          <th style="padding: 12px;">Email</th>
-          <th style="padding: 12px;">Role</th>
-          <th style="padding: 12px;">Status</th>
-          <th style="padding: 12px;"></th>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col">Role</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="text-right">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of result()?.content" style="border-bottom: 1px solid var(--color-border);">
-          <td style="padding: 12px;">
-            <a [routerLink]="['/users', user.id]">{{ user.fullName }}</a>
-            <span *ngIf="isSelf(user)" style="color: var(--color-text-muted);"> (you)</span>
+        <tr *ngFor="let user of result()?.content">
+          <td>
+            <a [routerLink]="['/users', user.id]" class="fw-600">{{ user.fullName }}</a>
+            <span *ngIf="isSelf(user)" class="badge badge-primary" style="margin-left: 6px;">You</span>
           </td>
-          <td style="padding: 12px;">{{ user.email }}</td>
-          <td style="padding: 12px;">{{ user.role }}</td>
-          <td style="padding: 12px;">{{ user.status }}</td>
-          <td style="padding: 12px; text-align: right;">
-            <button *ngIf="user.status === 'ACTIVE' && !isSelf(user)" (click)="disable(user)">Disable</button>
-            <button *ngIf="user.status === 'DISABLED'" (click)="enable(user)">Enable</button>
+          <td class="text-muted">{{ user.email }}</td>
+          <td>
+            <span class="badge" [ngClass]="roleBadgeClass(user.role)">{{ user.role }}</span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="user.status === 'ACTIVE' ? 'badge-success' : 'badge-neutral'">
+              {{ user.status }}
+            </span>
+          </td>
+          <td class="table-actions">
+            <button *ngIf="user.status === 'ACTIVE' && !isSelf(user)" class="btn btn-secondary btn-sm" (click)="disable(user)">Disable</button>
+            <button *ngIf="user.status === 'DISABLED'" class="btn btn-primary btn-sm" (click)="enable(user)">Enable</button>
           </td>
         </tr>
         <tr *ngIf="!loading() && result()?.content?.length === 0">
-          <td colspan="5" style="padding: 24px; text-align: center; color: var(--color-text-muted);">
-            No team members found.
+          <td colspan="5">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">🏢</div>
+              <h3>No team members yet</h3>
+              <p>Add members to collaborate on billing.</p>
+              <a routerLink="/users/new" class="btn btn-primary btn-sm">+ Add Member</a>
+            </div>
           </td>
+        </tr>
+        <tr *ngIf="loading()">
+          <td colspan="5" style="padding: 32px; text-align:center; color: var(--color-text-muted);">Loading…</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
-    <span style="color: var(--color-text-muted);">{{ result()?.totalElements || 0 }} total</span>
-    <div style="display: flex; gap: 8px;">
-      <button (click)="prevPage()" [disabled]="result()?.first">Previous</button>
-      <button (click)="nextPage()" [disabled]="result()?.last">Next</button>
+  <div class="pagination">
+    <span class="pagination-info">{{ result()?.totalElements || 0 }} members</span>
+    <div class="pagination-controls">
+      <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="result()?.first" aria-label="Previous page">← Previous</button>
+      <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="result()?.last" aria-label="Next page">Next →</button>
     </div>
   </div>
 </div>

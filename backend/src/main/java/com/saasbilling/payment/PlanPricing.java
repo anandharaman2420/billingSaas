@@ -1,30 +1,34 @@
 package com.saasbilling.payment;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.util.Map;
 
-/**
- * Placeholder pricing per plan tier (INR, per month). Kept as a simple
- * static map for now - when real plans/pricing get decided these
- * should move to configuration or a DB table so they can change
- * without a redeploy.
- */
-public final class PlanPricing {
+@Component
+public class PlanPricing {
 
-    private static final Map<String, BigDecimal> MONTHLY_PRICE_INR = Map.of(
-            "FREE", BigDecimal.ZERO,
-            "BASIC", new BigDecimal("499"),
-            "PROFESSIONAL", new BigDecimal("1499"),
-            "BUSINESS", new BigDecimal("3999")
-    );
+    private final Map<String, BigDecimal> monthlyPrices;
 
-    private PlanPricing() {
+    public PlanPricing(@Value("${app.subscription.pricing.free:0}") BigDecimal free,
+                       @Value("${app.subscription.pricing.basic:499}") BigDecimal basic,
+                       @Value("${app.subscription.pricing.professional:1499}") BigDecimal professional,
+                       @Value("${app.subscription.pricing.business:3999}") BigDecimal business) {
+        this.monthlyPrices = Map.of(
+                "FREE", free,
+                "BASIC", basic,
+                "PROFESSIONAL", professional,
+                "BUSINESS", business);
     }
 
-    public static BigDecimal monthlyPriceInr(String plan) {
-        BigDecimal price = MONTHLY_PRICE_INR.get(plan);
+    public BigDecimal monthlyPriceInr(String plan) {
+        BigDecimal price = monthlyPrices.get(plan);
         if (price == null) {
             throw new IllegalArgumentException("Unknown plan: " + plan);
+        }
+        if (price.signum() < 0) {
+            throw new IllegalStateException("Configured price for " + plan + " cannot be negative");
         }
         return price;
     }

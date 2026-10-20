@@ -2,9 +2,11 @@ package com.saasbilling.customer;
 
 import com.saasbilling.entity.Business;
 import com.saasbilling.entity.BusinessStatus;
+import com.saasbilling.entity.Branch;
 import com.saasbilling.entity.Customer;
 import com.saasbilling.entity.Product;
 import com.saasbilling.repository.BusinessRepository;
+import com.saasbilling.repository.BranchRepository;
 import com.saasbilling.repository.CustomerRepository;
 import com.saasbilling.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,8 @@ class CustomerTenantIsolationTest {
     private BusinessRepository businessRepository;
 
     @Autowired
+    private BranchRepository branchRepository;
+    @Autowired
     private CustomerRepository customerRepository;
 
     @Autowired
@@ -39,6 +43,7 @@ class CustomerTenantIsolationTest {
 
         Customer customer = new Customer();
         customer.setBusinessId(businessA.getId());
+        customer.setBranchId(defaultBranch(businessA).getId());
         customer.setCustomerName("Ramesh Kumar");
         customer = customerRepository.save(customer);
 
@@ -47,6 +52,27 @@ class CustomerTenantIsolationTest {
 
         Optional<Customer> sameTenant = customerRepository.findByIdAndBusinessId(customer.getId(), businessA.getId());
         assertThat(sameTenant).isPresent();
+    }
+
+    @Test
+    void customerFromAnotherBranchOfSameBusiness_isNotVisible() {
+        Business business = createBusiness("Multi Branch Shop", "branches@example.com");
+        Branch main = defaultBranch(business);
+        Branch other = new Branch();
+        other.setBusinessId(business.getId());
+        other.setBranchName("Second Branch");
+        other = branchRepository.save(other);
+
+        Customer customer = new Customer();
+        customer.setBusinessId(business.getId());
+        customer.setBranchId(main.getId());
+        customer.setCustomerName("Branch Customer");
+        customer = customerRepository.save(customer);
+
+        assertThat(customerRepository.findByIdAndBusinessIdAndBranchId(
+                customer.getId(), business.getId(), other.getId())).isEmpty();
+        assertThat(customerRepository.findByIdAndBusinessIdAndBranchId(
+                customer.getId(), business.getId(), main.getId())).isPresent();
     }
 
     @Test
@@ -73,12 +99,23 @@ class CustomerTenantIsolationTest {
         business.setEmail(email);
         business.setPhone("9999999999");
         business.setStatus(BusinessStatus.ACTIVE);
-        return businessRepository.save(business);
+        business = businessRepository.save(business);
+        Branch branch = new Branch();
+        branch.setBusinessId(business.getId());
+        branch.setBranchName("Main Branch");
+        branch.setDefaultBranch(true);
+        branchRepository.save(branch);
+        return business;
+    }
+
+    private Branch defaultBranch(Business business) {
+        return branchRepository.findFirstByBusinessIdAndDefaultBranchTrue(business.getId()).orElseThrow();
     }
 
     private Product newProduct(java.util.UUID businessId, String sku) {
         Product product = new Product();
         product.setBusinessId(businessId);
+        product.setBranchId(defaultBranch(businessRepository.findById(businessId).orElseThrow()).getId());
         product.setProductName("Engine Oil");
         product.setSku(sku);
         product.setUnit("LTR");
